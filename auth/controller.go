@@ -5,6 +5,7 @@ import (
 	"chat/globals"
 	"chat/utils"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -547,4 +548,238 @@ func RedeemAPI(c *gin.Context) {
 			"quota":  quota,
 		})
 	}
+}
+
+type SubmitGalleryForm struct {
+	ImageURL string `json:"image_url" binding:"required"`
+	Prompt   string `json:"prompt" binding:"required"`
+}
+
+type ApproveGalleryForm struct {
+	ID int64 `json:"id" binding:"required"`
+}
+
+type GalleryItem struct {
+	ID         int64  `json:"id"`
+	Prompt     string `json:"prompt"`
+	ImageURL   string `json:"image_url"`
+	AuthorName string `json:"author_name"`
+	Status     string `json:"status,omitempty"`
+	CreatedAt  string `json:"created_at"`
+}
+
+func SubmitGalleryAPI(c *gin.Context) {
+	user := RequireAuth(c)
+	if user == nil {
+		return
+	}
+
+	var form SubmitGalleryForm
+	if err := c.ShouldBindJSON(&form); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  "bad request",
+		})
+		return
+	}
+
+	db := utils.GetDBFromContext(c)
+	var displayName string
+	if err := globals.QueryRowDb(db, "SELECT display_name FROM auth WHERE id = ?", user.GetID(db)).Scan(&displayName); err != nil || displayName == "" {
+		displayName = user.Username
+	}
+
+	_, err := globals.ExecDb(db, `
+		INSERT INTO gallery (user_id, prompt, image_url, author_name) VALUES (?, ?, ?, ?)
+	`, user.GetID(db), form.Prompt, form.ImageURL, displayName)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": true,
+	})
+}
+
+func ApproveGalleryAPI(c *gin.Context) {
+	user := RequireAdmin(c)
+	if user == nil {
+		return
+	}
+
+	var form ApproveGalleryForm
+	if err := c.ShouldBindJSON(&form); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  "bad request",
+		})
+		return
+	}
+
+	db := utils.GetDBFromContext(c)
+	_, err := globals.ExecDb(db, "UPDATE gallery SET status = 'approved' WHERE id = ?", form.ID)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": true,
+	})
+}
+
+func RejectGalleryAPI(c *gin.Context) {
+	user := RequireAdmin(c)
+	if user == nil {
+		return
+	}
+
+	var form ApproveGalleryForm
+	if err := c.ShouldBindJSON(&form); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  "bad request",
+		})
+		return
+	}
+
+	db := utils.GetDBFromContext(c)
+	_, err := globals.ExecDb(db, "UPDATE gallery SET status = 'rejected' WHERE id = ?", form.ID)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": true,
+	})
+}
+
+func ListGalleryAPI(c *gin.Context) {
+	db := utils.GetDBFromContext(c)
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	offset := (page - 1) * limit
+
+	var total int64
+	globals.QueryRowDb(db, "SELECT COUNT(*) FROM gallery WHERE status = 'approved'").Scan(&total)
+
+	rows, err := globals.QueryDb(db, `
+		SELECT id, prompt, image_url, author_name, created_at
+		FROM gallery WHERE status = 'approved'
+		ORDER BY created_at DESC LIMIT ? OFFSET ?
+	`, limit, offset)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  err.Error(),
+		})
+		return
+	}
+	defer rows.Close()
+
+	var items []GalleryItem
+	for rows.Next() {
+		var item GalleryItem
+		var createdAt []uint8
+		if err := rows.Scan(&item.ID, &item.Prompt, &item.ImageURL, &item.AuthorName, &createdAt); err != nil {
+			continue
+		}
+		t := utils.ConvertTime(createdAt)
+		if t != nil {
+			item.CreatedAt = t.Format("2006-01-02 15:04:05")
+		}
+		items = append(items, item)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": true,
+		"data":   items,
+		"total":  total,
+	})
+}
+
+func AdminListGalleryAPI(c *gin.Context) {
+	user := RequireAdmin(c)
+	if user == nil {
+		return
+	}
+
+	db := utils.GetDBFromContext(c)
+
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
+	statusFilter := strings.TrimSpace(c.Query("status"))
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20
+	}
+	offset := (page - 1) * limit
+
+	var total int64
+	countQuery := "SELECT COUNT(*) FROM gallery"
+	var countArgs []interface{}
+	if statusFilter != "" {
+		countQuery += " WHERE status = ?"
+		countArgs = append(countArgs, statusFilter)
+	}
+	globals.QueryRowDb(db, countQuery, countArgs...).Scan(&total)
+
+	dataQuery := "SELECT id, prompt, image_url, author_name, status, created_at FROM gallery"
+	var dataArgs []interface{}
+	if statusFilter != "" {
+		dataQuery += " WHERE status = ?"
+		dataArgs = append(dataArgs, statusFilter)
+	}
+	dataQuery += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
+	dataArgs = append(dataArgs, limit, offset)
+
+	rows, err := globals.QueryDb(db, dataQuery, dataArgs...)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  err.Error(),
+		})
+		return
+	}
+	defer rows.Close()
+
+	var items []GalleryItem
+	for rows.Next() {
+		var item GalleryItem
+		var createdAt []uint8
+		if err := rows.Scan(&item.ID, &item.Prompt, &item.ImageURL, &item.AuthorName, &item.Status, &createdAt); err != nil {
+			continue
+		}
+		t := utils.ConvertTime(createdAt)
+		if t != nil {
+			item.CreatedAt = t.Format("2006-01-02 15:04:05")
+		}
+		items = append(items, item)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": true,
+		"data":   items,
+		"total":  total,
+	})
 }

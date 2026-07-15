@@ -19,4 +19,10 @@ func Register(app *gin.RouterGroup) {
 	app.POST("/subscribe", SubscribeAPI)
 	app.GET("/invite", InviteAPI)
 	app.GET("/redeem", RedeemAPI)
+
+	app.POST("/gallery/submit", SubmitGalleryAPI)
+	app.GET("/gallery", ListGalleryAPI)
+	app.POST("/admin/gallery/approve", ApproveGalleryAPI)
+	app.POST("/admin/gallery/reject", RejectGalleryAPI)
+	app.GET("/admin/gallery/list", AdminListGalleryAPI)
 }

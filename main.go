@@ -7,6 +7,7 @@ import (
 	"chat/auth"
 	"chat/channel"
 	"chat/cli"
+	"chat/connection"
 	"chat/globals"
 	"chat/manager"
 	"chat/manager/conversation"
@@ -49,6 +50,7 @@ func registerApiRouter(engine *gin.Engine) {
 		manager.Register(app)
 		addition.Register(app)
 		conversation.Register(app)
+		app.POST("/draw", manager.DrawAPI)
 	}
 }
 
@@ -64,6 +66,8 @@ func main() {
 	app := utils.NewEngine()
 	worker := middleware.RegisterMiddleware(app)
 	defer worker()
+
+	connection.ImportStudents(connection.DB)
 
 	utils.RegisterStaticRoute(app)
 	registerApiRouter(app)

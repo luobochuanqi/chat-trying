@@ -8,9 +8,11 @@ import (
 	"database/sql"
 	"fmt"
 	"math"
+	"net/http"
 	"strings"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/go-redis/redis/v8"
 )
 
@@ -46,7 +48,7 @@ func getUsersForm(db *sql.DB, page int64, search string) PaginationForm {
 	rows, err := globals.QueryDb(db, `
 		SELECT 
 		    auth.id, auth.username, auth.email, auth.is_admin,
-		    quota.quota, quota.used,
+		    quota.quota, quota.used, quota.credit_money, quota.draw_count,
 		    subscription.expired_at, subscription.total_month, subscription.enterprise, subscription.level,
 		    auth.is_banned
 		FROM auth
@@ -69,12 +71,14 @@ func getUsersForm(db *sql.DB, page int64, search string) PaginationForm {
 			expired           []uint8
 			quota             sql.NullFloat64
 			usedQuota         sql.NullFloat64
+			creditMoney       sql.NullFloat64
+			drawCount         sql.NullInt64
 			totalMonth        sql.NullInt64
 			isEnterprise      sql.NullBool
 			subscriptionLevel sql.NullInt64
 			isBanned          sql.NullBool
 		)
-		if err := rows.Scan(&user.Id, &user.Username, &email, &user.IsAdmin, &quota, &usedQuota, &expired, &totalMonth, &isEnterprise, &subscriptionLevel, &isBanned); err != nil {
+		if err := rows.Scan(&user.Id, &user.Username, &email, &user.IsAdmin, &quota, &usedQuota, &creditMoney, &drawCount, &expired, &totalMonth, &isEnterprise, &subscriptionLevel, &isBanned); err != nil {
 			return PaginationForm{
 				Status:  false,
 				Message: err.Error(),
@@ -88,6 +92,12 @@ func getUsersForm(db *sql.DB, page int64, search string) PaginationForm {
 		}
 		if usedQuota.Valid {
 			user.UsedQuota = float32(usedQuota.Float64)
+		}
+		if creditMoney.Valid {
+			user.CreditMoney = float32(creditMoney.Float64)
+		}
+		if drawCount.Valid {
+			user.DrawCount = int(drawCount.Int64)
 		}
 		if totalMonth.Valid {
 			user.TotalMonth = totalMonth.Int64
@@ -255,4 +265,72 @@ func UpdateRootPassword(db *sql.DB, cache *redis.Client, password string) error 
 	}
 
 	return nil
+}
+
+type CreditForm struct {
+	ID    int64   `json:"user_id" binding:"required"`
+	Value float32 `json:"value" binding:"required"`
+}
+
+type DrawForm struct {
+	ID    int64 `json:"user_id" binding:"required"`
+	Value int   `json:"value" binding:"required"`
+}
+
+func SetCreditAPI(c *gin.Context) {
+	db := utils.GetDBFromContext(c)
+
+	var form CreditForm
+	if err := c.ShouldBindJSON(&form); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	u := &AuthLike{ID: form.ID}
+	_, err := globals.ExecDb(db, `
+		INSERT INTO quota (user_id, credit_money) VALUES (?, ?) ON DUPLICATE KEY UPDATE credit_money = ?
+	`, u.GetID(db), form.Value, form.Value)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  false,
+			"message": "failed to update credit money",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": true,
+	})
+}
+
+func SetDrawAPI(c *gin.Context) {
+	db := utils.GetDBFromContext(c)
+
+	var form DrawForm
+	if err := c.ShouldBindJSON(&form); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	u := &AuthLike{ID: form.ID}
+	_, err := globals.ExecDb(db, `
+		INSERT INTO quota (user_id, draw_count) VALUES (?, ?) ON DUPLICATE KEY UPDATE draw_count = ?
+	`, u.GetID(db), form.Value, form.Value)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  false,
+			"message": "failed to update draw count",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"status": true,
+	})
 }
