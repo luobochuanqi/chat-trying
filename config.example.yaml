@@ -9,6 +9,8 @@ secret: change-this-to-a-random-secret
 server:
   port: 8094
 
+serve_static: true
+
 volcengine:
   api_key: "your-volcengine-ark-api-key"
 
