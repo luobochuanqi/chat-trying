@@ -2,16 +2,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { closeMenu, selectMenu } from "@/store/menu.ts";
 import React, { useMemo } from "react";
 import {
-  BookCopy,
-  CalendarRange,
-  CloudCog,
   CopyrightIcon,
-  CreditCard,
   FileClock,
   Gauge,
-  GitFork,
-  History,
-  Radio,
+  Image,
   ServerCrash,
   Settings,
   Users,
@@ -44,7 +38,6 @@ function MenuItem({ title, icon, path, exit, pro }: MenuItemProps) {
 
   const redirect = async () => {
     if (exit) return await router.navigate("/");
-
     if (mobile) dispatch(closeMenu());
     await router.navigate(`/admin${path}`);
   };
@@ -53,7 +46,6 @@ function MenuItem({ title, icon, path, exit, pro }: MenuItemProps) {
     <div className={cn("menu-item", active && "active")} onClick={redirect}>
       <div className={`menu-item-icon`}>{icon}</div>
       <div className={`menu-item-title`}>{title}</div>
-
       {pro && (
         <Badge className={`menu-item-badge ml-2`} variant={`gold`}>
           Pro
@@ -70,41 +62,8 @@ function MenuBar() {
     <div className={cn("admin-menu", open && "open")}>
       <MenuItem title={t("admin.dashboard")} icon={<Gauge />} path={"/"} />
       <MenuItem title={t("admin.user")} icon={<Users />} path={"/users"} />
+      <MenuItem title={"作品审核"} icon={<Image />} path={"/gallery"} />
       <MenuItem
-        title={t("admin.market.title")}
-        icon={<BookCopy />}
-        path={"/market"}
-      />
-      <MenuItem
-        title={t("admin.broadcast")}
-        icon={<Radio />}
-        path={"/broadcast"}
-      />
-      <MenuItem
-        title={t("admin.channel")}
-        icon={<GitFork />}
-        path={"/channel"}
-      />
-      <MenuItem title={t("admin.prize")} icon={<CloudCog />} path={"/charge"} />
-      <MenuItem
-        title={t("admin.subscription")}
-        icon={<CalendarRange />}
-        path={"/subscription"}
-      />
-      <MenuItem
-        title={t("admin.payment")}
-        icon={<CreditCard />}
-        path={"/pay"}
-        pro
-      />
-      <MenuItem
-        pro
-        title={t("record.title")}
-        icon={<History />}
-        path={"/record"}
-      />
-      <MenuItem
-        // pro
         title={t("admin.settings")}
         icon={<Settings />}
         path={"/system"}

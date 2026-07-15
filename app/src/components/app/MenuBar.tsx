@@ -17,36 +17,12 @@ import {
 import { Button } from "@/components/ui/button.tsx";
 import router from "@/router.tsx";
 import React from "react";
-import {
-  LibraryBig,
-  MessageCircle,
-  Shield,
-  User,
-  Wallet,
-} from "lucide-react";
+import { Image, MessageCircle, Shield, Store } from "lucide-react";
 import Icon from "@/components/utils/Icon.tsx";
 
 type MenuBarProps = {
   children: React.ReactNode;
   className?: string;
-};
-
-type MenuBarItemProps = {
-  icon: React.ReactElement;
-  path: string;
-  name: string;
-};
-
-const BarItem = ({ icon, path, name }: MenuBarItemProps) => {
-  const { t } = useTranslation();
-  const navigate = () => router.navigate(path);
-
-  return (
-    <DropdownMenuItem onClick={navigate}>
-      <Icon icon={icon} className={`w-4 h-4 mr-1.5`} />
-      {t(`bar.${name}-full`)}
-    </DropdownMenuItem>
-  );
 };
 
 function MenuBar({ children, className }: MenuBarProps) {
@@ -66,15 +42,23 @@ function MenuBar({ children, className }: MenuBarProps) {
               {username}
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <BarItem icon={<MessageCircle />} path={`/`} name={"chat"} />
-            <BarItem icon={<LibraryBig />} path={`/model`} name={"model"} />
-            {/* <BarItem icon={<Compass />} path={`/preset`} name={"preset"} /> */}
-            <BarItem icon={<Wallet />} path={`/wallet`} name={"wallet"} />
-            {/* <BarItem icon={<DraftingCompass />} path={`/key`} name={"key"} /> */}
-            <BarItem icon={<User />} path={`/account`} name={"account"} />
-            {/* <BarItem icon={<PieChart />} path={`/log`} name={"log"} /> */}
+            <DropdownMenuItem onClick={() => router.navigate("/")}>
+              <Icon icon={<MessageCircle />} className={`w-4 h-4 mr-1.5`} />
+              {t("bar.chat-full")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.navigate("/market")}>
+              <Icon icon={<Store />} className={`w-4 h-4 mr-1.5`} />
+              模型市场
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => router.navigate("/gallery")}>
+              <Icon icon={<Image />} className={`w-4 h-4 mr-1.5`} />
+              作品墙
+            </DropdownMenuItem>
             {admin && (
-              <BarItem icon={<Shield />} path={`/admin`} name={"admin"} />
+              <DropdownMenuItem onClick={() => router.navigate("/admin")}>
+                <Icon icon={<Shield />} className={`w-4 h-4 mr-1.5`} />
+                {t("bar.admin-full")}
+              </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>

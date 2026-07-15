@@ -34,7 +34,34 @@ system:
 student:
   initial_credit: 10.0
   initial_draws: 50
-  csv: "students.csv"
+  csv: "/students.csv"
+
+channel:
+  - name: deepseek
+    type: openai
+    endpoint: "https://api.deepseek.com"
+    priority: 1
+    weight: 1
+    models:
+      - deepseek-v4-flash
+      - deepseek-v4-pro
+    retry: 0
+
+market:
+  - id: deepseek-v4-flash
+    name: "DeepSeek V4 Flash"
+    description: "快速推理 · ¥1(入) ¥2(出)/百万token"
+    default: true
+  - id: deepseek-v4-pro
+    name: "DeepSeek V4 Pro"
+    description: "高性能推理 · ¥3(入) ¥6(出)/百万token"
+    default: false
+  - id: seedream-draw
+    name: "Seedream 生图"
+    description: "AI 文生图 · 消耗生成次数"
+    default: false
+    tag:
+      - image-generation
 
 charge:
   - type: token-billing

@@ -13,6 +13,7 @@ import { useSelector } from "react-redux";
 import { selectAdmin, selectAuthenticated, selectInit } from "@/store/auth.ts";
 import Index from "@/routes/Index.tsx";
 import Gallery from "@/routes/Gallery.tsx";
+import MarketPage from "@/routes/Market.tsx";
 
 const Sharing = lazyFactor(() => import("@/routes/Sharing.tsx"));
 
@@ -49,6 +50,12 @@ const router = createBrowserRouter([
             <Auth />
           </AuthForbidden>
         ),
+        ErrorBoundary: NotFound,
+      },
+      {
+        id: "market",
+        path: "/market",
+        element: <MarketPage />,
         ErrorBoundary: NotFound,
       },
       {
