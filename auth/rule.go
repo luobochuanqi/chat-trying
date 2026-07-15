@@ -20,6 +20,13 @@ const (
 
 // CanEnableModel returns whether the model can be enabled (without subscription)
 func CanEnableModel(db *sql.DB, user *User, model string, messages []globals.Message) error {
+	if model == globals.DrawModel {
+		if user != nil && user.GetDrawCount(db) > 0 {
+			return nil
+		}
+		return fmt.Errorf("draw count exceeded")
+	}
+
 	isAuth := user != nil
 	isAdmin := isAuth && user.IsAdmin(db)
 

@@ -90,6 +90,7 @@ func ConnectDatabase() *sql.DB {
 	CreateInvitationTable(db)
 	CreateRedeemTable(db)
 	CreateBroadcastTable(db)
+	CreateGalleryTable(db)
 
 	if err := doMigration(db); err != nil {
 		fmt.Println(fmt.Sprintf("migration error: %s", err))
@@ -133,7 +134,8 @@ func CreateUserTable(db *sql.DB) {
 		  email VARCHAR(255) UNIQUE,
 		  password VARCHAR(64) NOT NULL,
 		  is_admin BOOLEAN DEFAULT FALSE,
-		  is_banned BOOLEAN DEFAULT FALSE
+		  is_banned BOOLEAN DEFAULT FALSE,
+		  display_name VARCHAR(64)
 		);
 	`)
 	if err != nil {
@@ -166,6 +168,8 @@ func CreateQuotaTable(db *sql.DB) {
 		  user_id INT UNIQUE,
 		  quota DECIMAL(24, 6),
 		  used DECIMAL(24, 6),
+		  credit_money DECIMAL(16,4) DEFAULT 0,
+		  draw_count INT DEFAULT 0,
 		  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		  FOREIGN KEY (user_id) REFERENCES auth(id)
@@ -310,6 +314,24 @@ func CreateBroadcastTable(db *sql.DB) {
 		  content TEXT,
 		  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 		  FOREIGN KEY (poster_id) REFERENCES auth(id)
+		);
+	`)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func CreateGalleryTable(db *sql.DB) {
+	_, err := globals.ExecDb(db, `
+		CREATE TABLE IF NOT EXISTS gallery (
+		  id INT PRIMARY KEY AUTO_INCREMENT,
+		  user_id INT,
+		  prompt TEXT,
+		  image_url VARCHAR(512),
+		  author_name VARCHAR(64),
+		  status VARCHAR(16) DEFAULT 'pending',
+		  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		  FOREIGN KEY (user_id) REFERENCES auth(id)
 		);
 	`)
 	if err != nil {
