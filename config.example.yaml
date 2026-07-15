@@ -1,32 +1,50 @@
-mysql:
-  db: chatnio
-  host: localhost
-  password: chatnio123456
-  port: 3306
-  user: root
-  tls: false
-
 redis:
   host: localhost
   port: 6379
   db: 0
   password: ""
 
-
-secret: secret
-serve_static: true
+secret: change-this-to-a-random-secret
 
 server:
   port: 8094
+
+volcengine:
+  api_key: "your-volcengine-ark-api-key"
+
+deepseek:
+  api_key: "your-deepseek-api-key"
+  endpoint: "https://api.deepseek.com"
+
 system:
   general:
-    backend: ""
-  mail:
-    host: ""
-    port: 465
-    username: ""
-    password: ""
-    from: ""
-  search:
-    endpoint: https://duckduckgo-api.vercel.app
-    query: 5
+    title: "AI 创作平台"
+    logo: ""
+    backend: "http://localhost:8094"
+  site:
+    closeregister: true
+    closerelay: true
+    quota: 0
+  common:
+    imagestore: true
+    promptstore: false
+
+student:
+  initial_credit: 10.0
+  initial_draws: 50
+  csv: "students.csv"
+
+charge:
+  - type: token-billing
+    models: [deepseek-v4-flash]
+    input: 0.001
+    output: 0.002
+    anonymous: false
+  - type: token-billing
+    models: [deepseek-v4-pro]
+    input: 0.003
+    output: 0.006
+    anonymous: false
+  - type: non-billing
+    models: [seedream-draw]
+    anonymous: false
