@@ -27,6 +27,7 @@ services:
       REDIS_PASSWORD: ""
       REDIS_DB: 0
       SECRET: "change-this-to-a-random-secret-at-least-32-chars"
+      SERVE_STATIC: "true"
       VOLCENGINE_API_KEY: "${VOLCENGINE_API_KEY}"
       DEEPSEEK_API_KEY: "${DEEPSEEK_API_KEY}"
       SERVER_PORT: "8094"

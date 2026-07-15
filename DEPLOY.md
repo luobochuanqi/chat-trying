@@ -60,6 +60,7 @@ services:
       REDIS_PASSWORD: ""
       REDIS_DB: 0
       SECRET: "替换为32位以上随机字符串"
+      SERVE_STATIC: "true"
       VOLCENGINE_API_KEY: "你的火山引擎ARK密钥"
       DEEPSEEK_API_KEY: "你的DeepSeek API密钥"
     volumes:
