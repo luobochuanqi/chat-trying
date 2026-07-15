@@ -198,20 +198,7 @@ function Login() {
             </div>
           </CardContent>
         </Card>
-        <div className={`auth-card addition-wrapper`}>
-          <div className={`row`}>
-            {t("auth.no-account")}
-            <a className={`link`} onClick={() => router.navigate("/register")}>
-              {t("auth.register")}
-            </a>
-          </div>
-          <div className={`row`}>
-            {t("auth.forgot-password")}
-            <a className={`link`} onClick={() => router.navigate("/forgot")}>
-              {t("auth.reset-password")}
-            </a>
-          </div>
-        </div>
+
       </div>
     </ScrollArea>
   );
