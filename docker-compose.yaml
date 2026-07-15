@@ -1,24 +1,7 @@
 version: '3'
 services:
-  mysql:
-    image: mysql:latest
-    container_name: db
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: chatnio
-      MYSQL_USER: chatnio
-      MYSQL_PASSWORD: chatnio123456!
-      TZ: Asia/Shanghai
-    expose:
-      - "3306"
-    volumes:
-        - ./db:/var/lib/mysql
-    networks:
-      - chatnio-network
-
   redis:
-    image: redis:latest
+    image: redis:alpine
     container_name: redis
     restart: always
     expose:
@@ -26,41 +9,35 @@ services:
     volumes:
       - ./redis:/data
     networks:
-      - chatnio-network
+      - ai-platform-network
 
-  chatnio:
-      image: programzmh/chatnio
-      container_name: chatnio
-      restart: always
-      ports:
-          - "8000:8094"
-      depends_on:
-          - mysql
-          - redis
-      links:
-          - mysql
-          - redis
-      ulimits:
-        nofile:
-          soft: 65535
-          hard: 65535
-      environment:
-          MYSQL_HOST: mysql
-          MYSQL_USER: chatnio
-          MYSQL_PASSWORD: chatnio123456!
-          MYSQL_DB: chatnio
-          REDIS_HOST: redis
-          REDIS_PORT: 6379
-          REDIS_PASSWORD: ""
-          REDIS_DB: 0
-          SERVE_STATIC: "true"
-      volumes:
-        - ./config:/config
-        - ./logs:/logs
-        - ./storage:/storage
-      networks:
-        - chatnio-network
+  app:
+    build: .
+    container_name: ai-platform
+    restart: always
+    ports:
+      - "8000:8094"
+    depends_on:
+      - redis
+    links:
+      - redis
+    environment:
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ""
+      REDIS_DB: 0
+      SECRET: "change-this-to-a-random-secret-at-least-32-chars"
+      VOLCENGINE_API_KEY: "${VOLCENGINE_API_KEY}"
+      DEEPSEEK_API_KEY: "${DEEPSEEK_API_KEY}"
+      SERVER_PORT: "8094"
+    volumes:
+      - ./config:/config
+      - ./logs:/logs
+      - ./storage:/storage
+      - ./students.csv:/students.csv
+    networks:
+      - ai-platform-network
 
 networks:
-  chatnio-network:
+  ai-platform-network:
     driver: bridge
