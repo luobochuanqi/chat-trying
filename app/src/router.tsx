@@ -12,7 +12,6 @@ import { lazyFactor } from "@/utils/loader.tsx";
 import { useSelector } from "react-redux";
 import { selectAdmin, selectAuthenticated, selectInit } from "@/store/auth.ts";
 import Index from "@/routes/Index.tsx";
-import License from "@/routes/admin/License.tsx";
 import Gallery from "@/routes/Gallery.tsx";
 
 const Sharing = lazyFactor(() => import("@/routes/Sharing.tsx"));
