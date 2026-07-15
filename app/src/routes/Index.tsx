@@ -4,11 +4,10 @@ import "@/assets/pages/home.less";
 import { Button } from "@/components/ui/button.tsx";
 import {
   ChevronDown,
+  Image,
   MessageCircle,
   Shield,
-  Wallet,
-  LibraryBig,
-  User,
+  Store,
 } from "lucide-react";
 import React from "react";
 import Icon from "@/components/utils/Icon.tsx";
@@ -36,21 +35,14 @@ type BarItemProps = {
   name: string;
 };
 
-function isPrefix(current: string, path: string): boolean {
-  if (location.pathname === path) return true;
-  if (location.pathname + "/" === path) return true;
-
-  return path.length > 1 && current.startsWith(path + "/");
-}
-
 function BarItem({ icon, path, name }: BarItemProps) {
   const { t } = useTranslation();
   const location = useLocation();
-  const active = isPrefix(location.pathname, path);
+  const active =
+    location.pathname === path || location.pathname + "/" === path;
 
   const hidden = useSelector(hideToolbarTextSelector);
   const mobile = useMobile();
-
   const [open, setOpen] = React.useState(false);
 
   const onClick = async () => {
@@ -75,7 +67,7 @@ function BarItem({ icon, path, name }: BarItemProps) {
             align="center"
             className={`z-[100]`}
           >
-            {t(`bar.${name}`)}
+            {name}
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -87,7 +79,7 @@ function BarItem({ icon, path, name }: BarItemProps) {
         )}
         onClick={onClick}
       >
-        {t(`bar.${name}`)}
+        {name}
       </div>
     </div>
   );
@@ -110,14 +102,10 @@ function ToolBar() {
       >
         <ChevronDown className={`h-3.5 w-3.5`} />
       </div>
-      <BarItem icon={<MessageCircle />} path={`/`} name={"chat"} />
-      <BarItem icon={<LibraryBig />} path={`/model`} name={"model"} />
-      {/* <BarItem icon={<Compass />} path={`/preset`} name={"preset"} /> */}
-      <BarItem icon={<Wallet />} path={`/wallet`} name={"wallet"} />
-      {/* <BarItem icon={<DraftingCompass />} path={`/key`} name={"key"} /> */}
-      {/* <BarItem icon={<PieChart />} path={`/log`} name={"log"} /> */}
-      <BarItem icon={<User />} path={`/account`} name={"account"} />
-      {admin && <BarItem icon={<Shield />} path={`/admin`} name={"admin"} />}
+      <BarItem icon={<MessageCircle />} path={`/`} name={"聊天"} />
+      <BarItem icon={<Store />} path={`/market`} name={"市场"} />
+      <BarItem icon={<Image />} path={`/gallery`} name={"作品墙"} />
+      {admin && <BarItem icon={<Shield />} path={`/admin`} name={"管理"} />}
     </div>
   );
 }

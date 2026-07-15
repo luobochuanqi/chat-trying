@@ -20,7 +20,6 @@ const Sharing = lazyFactor(() => import("@/routes/Sharing.tsx"));
 const AdminPage = lazyFactor(() => import("@/routes/Admin.tsx"));
 const AdminDashboard = lazyFactor(() => import("@/routes/admin/DashBoard.tsx"));
 const AdminSystem = lazyFactor(() => import("@/routes/admin/System.tsx"));
-const AdminLicense = lazyFactor(() => import("@/routes/admin/License.tsx"));
 const AdminUsers = lazyFactor(() => import("@/routes/admin/Users.tsx"));
 const AdminLogger = lazyFactor(() => import("@/routes/admin/Logger.tsx"));
 const AdminGallery = lazyFactor(() => import("@/routes/admin/Gallery.tsx"));
@@ -99,24 +98,6 @@ const router = createBrowserRouter([
             element: (
               <Suspense>
                 <AdminSystem />
-              </Suspense>
-            ),
-          },
-          {
-            id: "admin-warm-up",
-            path: "warmup",
-            element: (
-              <Suspense>
-                <AdminLicense />
-              </Suspense>
-            ),
-          },
-          {
-            id: "admin-license",
-            path: "license",
-            element: (
-              <Suspense>
-                <AdminLicense />
               </Suspense>
             ),
           },

@@ -34,7 +34,7 @@ system:
 student:
   initial_credit: 10.0
   initial_draws: 50
-  csv: "/students.csv"
+  csv: "students.csv"
 
 channel:
   - name: deepseek

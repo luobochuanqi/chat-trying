@@ -23,8 +23,11 @@ func isUserExist(db *sql.DB, username string) bool {
 func ImportStudents(db *sql.DB) {
 	csvPath := viper.GetString("student.csv")
 	if csvPath == "" {
+		globals.Warn("[csv] student csv path is empty, skipping import")
 		return
 	}
+
+	globals.Info(fmt.Sprintf("[csv] looking for student csv at: %s", csvPath))
 
 	if !utils.IsFileExist(csvPath) {
 		globals.Warn(fmt.Sprintf("[csv] student csv file not found: %s", csvPath))

@@ -329,3 +329,33 @@ export async function releaseUsageOperation(
     return { status: false, message: getErrorMessage(e) };
   }
 }
+
+export async function creditMoneyOperation(
+  id: number,
+  value: number,
+): Promise<CommonResponse> {
+  try {
+    const response = await axios.post("/admin/user/credit", {
+      user_id: id,
+      value,
+    });
+    return response.data as CommonResponse;
+  } catch (e) {
+    return { status: false, message: getErrorMessage(e) };
+  }
+}
+
+export async function drawCountOperation(
+  id: number,
+  value: number,
+): Promise<CommonResponse> {
+  try {
+    const response = await axios.post("/admin/user/draw", {
+      user_id: id,
+      value,
+    });
+    return response.data as CommonResponse;
+  } catch (e) {
+    return { status: false, message: getErrorMessage(e) };
+  }
+}
