@@ -8,13 +8,11 @@ import {
 } from "@/admin/types.ts";
 import {
   banUserOperation,
+  creditMoneyOperation,
+  drawCountOperation,
   getUserList,
   initialUserFilter,
-  quotaOperation,
-  releaseUsageOperation,
   setAdminOperation,
-  subscriptionLevelOperation,
-  subscriptionOperation,
   updateEmail,
   updatePassword,
   UserFilterProps,
@@ -37,13 +35,10 @@ import {
 import { Button } from "@/components/ui/button.tsx";
 import {
   ArrowDownNarrowWide,
-  CalendarCheck2,
-  CalendarClock,
-  CalendarOff,
+  Banknote,
   CalendarPlus,
-  CloudCog,
-  CloudFog,
   Filter,
+  Image,
   KeyRound,
   Loader2,
   Mail,
@@ -57,11 +52,10 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input.tsx";
 import PopupDialog, { popupTypes } from "@/components/PopupDialog.tsx";
-import { getNumber, isEnter, parseNumber } from "@/utils/base.ts";
+import { getNumber, isEnter } from "@/utils/base.ts";
 import { useSelector } from "react-redux";
 import { selectUsername } from "@/store/auth.ts";
 import { PaginationAction } from "@/components/ui/pagination.tsx";
-import Tips from "@/components/Tips.tsx";
 import {
   Dialog,
   DialogContent,
@@ -75,7 +69,6 @@ import { RadioBox } from "@/components/ui/radio-box.tsx";
 import { formReducer } from "@/utils/form.ts";
 import { Separator } from "@/components/ui/separator.tsx";
 import { toast } from "sonner";
-import { Badge } from "../ui/badge";
 
 type OperationMenuProps = {
   user: UserData;
@@ -111,17 +104,12 @@ function doToast(t: any, resp: CommonResponse) {
 
 function OperationMenu({ user, onRefresh }: OperationMenuProps) {
   const { t } = useTranslation();
-
   const username = useSelector(selectUsername);
 
   const [passwordOpen, setPasswordOpen] = useState<boolean>(false);
   const [emailOpen, setEmailOpen] = useState<boolean>(false);
-  const [quotaOpen, setQuotaOpen] = useState<boolean>(false);
-  const [quotaSetOpen, setQuotaSetOpen] = useState<boolean>(false);
-  const [subscriptionOpen, setSubscriptionOpen] = useState<boolean>(false);
-  const [subscriptionLevelOpen, setSubscriptionLevelOpen] =
-    useState<boolean>(false);
-  const [releaseOpen, setReleaseOpen] = useState<boolean>(false);
+  const [creditOpen, setCreditOpen] = useState<boolean>(false);
+  const [drawOpen, setDrawOpen] = useState<boolean>(false);
   const [banOpen, setBanOpen] = useState<boolean>(false);
   const [adminOpen, setAdminOpen] = useState<boolean>(false);
 
@@ -139,12 +127,10 @@ function OperationMenu({ user, onRefresh }: OperationMenuProps) {
         onSubmit={async (password) => {
           const resp = await updatePassword(user.id, password);
           doToast(t, resp);
-
           if (resp.status) {
             username === user.username && location.reload();
             onRefresh?.();
           }
-
           return resp.status;
         }}
       />
@@ -160,99 +146,38 @@ function OperationMenu({ user, onRefresh }: OperationMenuProps) {
         onSubmit={async (email) => {
           const resp = await updateEmail(user.id, email);
           doToast(t, resp);
-
           if (resp.status) onRefresh?.();
           return resp.status;
         }}
       />
       <PopupDialog
         type={popupTypes.Number}
-        title={t("admin.quota-action")}
-        name={t("admin.quota")}
-        description={t("admin.quota-action-desc")}
-        defaultValue={"0"}
+        title={"设置¥额度"}
+        name={"¥额度"}
+        description={"修改用户的¥额度"}
+        defaultValue={user.credit_money.toFixed(2)}
         onValueChange={getNumber}
-        open={quotaOpen}
-        setOpen={setQuotaOpen}
+        open={creditOpen}
+        setOpen={setCreditOpen}
         componentProps={{ acceptNegative: true }}
         onSubmit={async (value) => {
-          const quota = parseNumber(value);
-          const resp = await quotaOperation(user.id, quota);
+          const resp = await creditMoneyOperation(user.id, value);
           doToast(t, resp);
-
           if (resp.status) onRefresh?.();
           return resp.status;
         }}
       />
       <PopupDialog
         type={popupTypes.Number}
-        title={t("admin.quota-set-action")}
-        name={t("admin.quota")}
-        description={t("admin.quota-set-action-desc")}
-        defaultValue={user.quota.toFixed(2)}
-        onValueChange={getNumber}
-        open={quotaSetOpen}
-        setOpen={setQuotaSetOpen}
-        componentProps={{ acceptNegative: true }}
+        title={"设置生图次数"}
+        name={"生图次数"}
+        description={"修改用户的生图次数"}
+        defaultValue={String(user.draw_count)}
+        open={drawOpen}
+        setOpen={setDrawOpen}
         onSubmit={async (value) => {
-          const quota = parseNumber(value);
-          const resp = await quotaOperation(user.id, quota, true);
+          const resp = await drawCountOperation(user.id, parseInt(value));
           doToast(t, resp);
-
-          if (resp.status) onRefresh?.();
-          return resp.status;
-        }}
-      />
-      <PopupDialog
-        type={popupTypes.Clock}
-        title={t("admin.subscription-action")}
-        description={t("admin.subscription-action-desc", {
-          username: user.username,
-        })}
-        defaultValue={user.expired_at || new Date().toISOString().slice(0, 19).replace('T', ' ')}
-        open={subscriptionOpen}
-        setOpen={setSubscriptionOpen}
-        onSubmit={async (value) => {
-          const resp = await subscriptionOperation(user.id, value);
-          doToast(t, resp);
-
-          if (resp.status) onRefresh?.();
-          return resp.status;
-        }}
-      />
-      <PopupDialog
-        type={popupTypes.List}
-        title={t("admin.subscription-level")}
-        name={t("admin.level")}
-        description={t("admin.subscription-level-desc")}
-        defaultValue={userTypeArray[user.level]}
-        params={{
-          dataList: userTypeArray,
-          dataListTranslated: "admin.identity",
-        }}
-        open={subscriptionLevelOpen}
-        setOpen={setSubscriptionLevelOpen}
-        onSubmit={async (value) => {
-          const level = userTypeArray.indexOf(value as UserType);
-          console.log(level);
-          const resp = await subscriptionLevelOperation(user.id, level);
-          doToast(t, resp);
-
-          if (resp.status) onRefresh?.();
-          return resp.status;
-        }}
-      />
-      <PopupDialog
-        type={popupTypes.Empty}
-        title={t("admin.release-subscription-action")}
-        name={t("admin.release-subscription")}
-        description={t("admin.release-subscription-action-desc")}
-        open={releaseOpen}
-        setOpen={setReleaseOpen}
-        onSubmit={async () => {
-          const resp = await releaseUsageOperation(user.id);
-          doToast(t, resp);
-
           if (resp.status) onRefresh?.();
           return resp.status;
         }}
@@ -272,7 +197,6 @@ function OperationMenu({ user, onRefresh }: OperationMenuProps) {
         onSubmit={async () => {
           const resp = await banUserOperation(user.id, !user.is_banned);
           doToast(t, resp);
-
           if (resp.status) onRefresh?.();
           return resp.status;
         }}
@@ -296,7 +220,6 @@ function OperationMenu({ user, onRefresh }: OperationMenuProps) {
         onSubmit={async () => {
           const resp = await setAdminOperation(user.id, !user.is_admin);
           doToast(t, resp);
-
           if (resp.status) onRefresh?.();
           return resp.status;
         }}
@@ -339,25 +262,13 @@ function OperationMenu({ user, onRefresh }: OperationMenuProps) {
               {t("admin.set-admin-action")}
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem onClick={() => setQuotaOpen(true)}>
-            <CloudFog className={`h-4 w-4 mr-2`} />
-            {t("admin.quota-action")}
+          <DropdownMenuItem onClick={() => setCreditOpen(true)}>
+            <Banknote className={`h-4 w-4 mr-2`} />
+            {"设置¥额度"}
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setQuotaSetOpen(true)}>
-            <CloudCog className={`h-4 w-4 mr-2`} />
-            {t("admin.quota-set-action")}
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setSubscriptionOpen(true)}>
-            <CalendarClock className={`h-4 w-4 mr-2`} />
-            {t("admin.subscription-action")}
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setSubscriptionLevelOpen(true)}>
-            <CalendarCheck2 className={`h-4 w-4 mr-2`} />
-            {t("admin.subscription-level")}
-          </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setReleaseOpen(true)}>
-            <CalendarOff className={`h-4 w-4 mr-2`} />
-            {t("admin.release-subscription-action")}
+          <DropdownMenuItem onClick={() => setDrawOpen(true)}>
+            <Image className={`h-4 w-4 mr-2`} />
+            {"设置生图次数"}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -467,15 +378,10 @@ function UserTable() {
                 colLayout
                 className={`mt-2`}
                 items={[
-                  // id-desc, id-asc
                   { id: "id-asc", value: t("filter.sorts.id-asc") },
                   { id: "id-desc", value: t("filter.sorts.id-desc") },
-
-                  // quota-desc, quota-asc
                   { id: "quota-asc", value: t("filter.sorts.quota-asc") },
                   { id: "quota-desc", value: t("filter.sorts.quota-desc") },
-
-                  // used-quota-desc, used-quota-asc
                   {
                     id: "used-quota-asc",
                     value: t("filter.sorts.used-quota-asc"),
@@ -484,8 +390,6 @@ function UserTable() {
                     id: "used-quota-desc",
                     value: t("filter.sorts.used-quota-desc"),
                   },
-
-                  // plan-desc, plan-asc
                   { id: "plan-asc", value: t("filter.sorts.plan-asc") },
                   { id: "plan-desc", value: t("filter.sorts.plan-desc") },
                 ]}
@@ -523,12 +427,10 @@ function UserTable() {
                 <TableHead>ID</TableHead>
                 <TableHead>{t("admin.username")}</TableHead>
                 <TableHead>{t("admin.email")}</TableHead>
+                <TableHead>{"¥额度"}</TableHead>
+                <TableHead>{"生图次数"}</TableHead>
                 <TableHead>{t("admin.quota")}</TableHead>
                 <TableHead>{t("admin.used-quota")}</TableHead>
-                <TableHead>{t("admin.is-subscribed")}</TableHead>
-                <TableHead>{t("admin.level")}</TableHead>
-                <TableHead>{t("admin.total-month")}</TableHead>
-                <TableHead>{t("admin.expired-at")}</TableHead>
                 <TableHead>{t("admin.is-banned")}</TableHead>
                 <TableHead>{t("admin.is-admin")}</TableHead>
                 <TableHead>{t("admin.action")}</TableHead>
@@ -544,24 +446,10 @@ function UserTable() {
                   <TableCell className={`whitespace-nowrap`}>
                     {user.email || "-"}
                   </TableCell>
+                  <TableCell>{user.credit_money.toFixed(2)}</TableCell>
+                  <TableCell>{user.draw_count}</TableCell>
                   <TableCell>{user.quota}</TableCell>
                   <TableCell>{user.used_quota}</TableCell>
-                  <TableCell>
-                    {t(user.is_subscribed.toString())}
-                    <Tips
-                      className={`inline-block`}
-                      content={t("admin.is-subscribed-tips")}
-                    />
-                  </TableCell>
-                  <TableCell className={`whitespace-nowrap`}>
-                    <Badge variant={`outline`}>
-                      {t(`admin.identity.${userTypeArray[user.level]}`)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{user.total_month}</TableCell>
-                  <TableCell className={`whitespace-nowrap`}>
-                    {user.expired_at || "-"}
-                  </TableCell>
                   <TableCell>{t(user.is_banned.toString())}</TableCell>
                   <TableCell>{t(user.is_admin.toString())}</TableCell>
                   <TableCell>
