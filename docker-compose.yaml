@@ -12,7 +12,7 @@ services:
       - ai-platform-network
 
   app:
-    build: .
+    image: ghcr.io/${GHCR_USER}/chat-trying:latest
     container_name: ai-platform
     restart: always
     ports:

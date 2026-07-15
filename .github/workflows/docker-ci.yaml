@@ -36,8 +36,8 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ghcr.io/${{ env.OWNER_LC }}/chatnio:latest
-            ghcr.io/${{ env.OWNER_LC }}/chatnio:${{ env.VERSION }}
+            ghcr.io/${{ env.OWNER_LC }}/chat-trying:latest
+            ghcr.io/${{ env.OWNER_LC }}/chat-trying:${{ env.VERSION }}
           cache-from: |
             type=gha
           cache-to: |
