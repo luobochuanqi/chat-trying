@@ -146,6 +146,9 @@ const (
 	SkylarkChat                  = "skylark-chat"
 	DeepseekV3                   = "deepseek-chat"
 	DeepseekR1                   = "deepseek-reasoner"
+	DeepseekV4Flash              = "deepseek-v4-flash"
+	DeepseekV4Pro                = "deepseek-v4-pro"
+	DrawModel                    = "seedream-draw"
 )
 
 var OpenAIDalleModels = []string{
