@@ -105,6 +105,8 @@ export type UserData = {
   is_admin: boolean;
   quota: number;
   used_quota: number;
+  credit_money: number;
+  draw_count: number;
   is_subscribed: boolean;
   total_month: number;
   expired_at: string;

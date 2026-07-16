@@ -12,7 +12,6 @@ import {
 import React from "react";
 import Icon from "@/components/utils/Icon.tsx";
 import router from "@/router.tsx";
-import { useTranslation } from "react-i18next";
 import { cn } from "@/components/ui/lib/utils.ts";
 import { useSelector } from "react-redux";
 import { selectAdmin } from "@/store/auth.ts";
@@ -36,7 +35,6 @@ type BarItemProps = {
 };
 
 function BarItem({ icon, path, name }: BarItemProps) {
-  const { t } = useTranslation();
   const location = useLocation();
   const active =
     location.pathname === path || location.pathname + "/" === path;

@@ -161,7 +161,7 @@ function OperationMenu({ user, onRefresh }: OperationMenuProps) {
         setOpen={setCreditOpen}
         componentProps={{ acceptNegative: true }}
         onSubmit={async (value) => {
-          const resp = await creditMoneyOperation(user.id, value);
+          const resp = await creditMoneyOperation(user.id, Number(value));
           doToast(t, resp);
           if (resp.status) onRefresh?.();
           return resp.status;
