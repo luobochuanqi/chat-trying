@@ -12,6 +12,10 @@ import (
 )
 
 func NewChatRequest(group string, props *adaptercommon.ChatProps, hook globals.Hook) error {
+	if props.OriginalModel == globals.DrawModel {
+		return fmt.Errorf("use POST /draw for image generation, not chat")
+	}
+
 	ticker := ConduitInstance.GetTicker(props.OriginalModel, group)
 	if ticker == nil || ticker.IsEmpty() {
 		return fmt.Errorf("cannot find channel for model %s", props.OriginalModel)
