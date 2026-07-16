@@ -55,7 +55,8 @@ func DrawAPI(c *gin.Context) {
 	user.DecreaseDrawCount(db, 1)
 
 	c.JSON(http.StatusOK, gin.H{
-		"url":    localPath,
-		"prompt": prompt,
+		"url":        localPath,
+		"prompt":     prompt,
+		"draw_count": user.GetDrawCount(db),
 	})
 }
