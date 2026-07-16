@@ -133,7 +133,7 @@ func (u *User) SetDrawCount(db *sql.DB, count int) bool {
 
 func (u *User) CreateInitialQuotaWithDraw(db *sql.DB, money float32, draws int) bool {
 	_, err := globals.ExecDb(db, `
-		INSERT INTO quota (user_id, quota, used, credit_money, draw_count) VALUES (?, 0, 0, ?, ?)
-	`, u.GetID(db), money, draws)
+		INSERT INTO quota (user_id, quota, used, credit_money, draw_count) VALUES (?, ?, 0, ?, ?)
+	`, u.GetID(db), money, money, draws)
 	return err == nil
 }

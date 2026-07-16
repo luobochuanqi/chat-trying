@@ -78,7 +78,7 @@ func ImportStudents(db *sql.DB) {
 		_, err := globals.ExecDb(db, `
 			INSERT INTO auth (username, password, email, is_admin, bind_id, token, display_name)
 			VALUES (?, ?, ?, ?, ?, ?, ?)
-		`, username, hashedPassword, fmt.Sprintf("%s@student.local", username), false, 0, "student", displayName)
+		`, username, hashedPassword, fmt.Sprintf("%s@student.local", username), false, i+1001, "student", displayName)
 		if err != nil {
 			globals.Warn(fmt.Sprintf("[csv] failed to create user %s: %s", username, err.Error()))
 			continue
@@ -90,8 +90,8 @@ func ImportStudents(db *sql.DB) {
 		}
 
 		_, err = globals.ExecDb(db, `
-			INSERT INTO quota (user_id, quota, used, credit_money, draw_count) VALUES (?, 0, 0, ?, ?)
-		`, userId, initialMoney, initialDraws)
+			INSERT INTO quota (user_id, quota, used, credit_money, draw_count) VALUES (?, ?, 0, ?, ?)
+		`, userId, initialMoney, initialMoney, initialDraws)
 		if err != nil {
 			globals.Warn(fmt.Sprintf("[csv] failed to create quota for %s: %s", username, err.Error()))
 			continue

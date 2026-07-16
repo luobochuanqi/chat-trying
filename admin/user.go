@@ -291,8 +291,8 @@ func SetCreditAPI(c *gin.Context) {
 
 	u := &AuthLike{ID: form.ID}
 	_, err := globals.ExecDb(db, `
-		INSERT INTO quota (user_id, credit_money) VALUES (?, ?) ON DUPLICATE KEY UPDATE credit_money = ?
-	`, u.GetID(db), form.Value, form.Value)
+		INSERT INTO quota (user_id, quota, credit_money) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE quota = ?, credit_money = ?
+	`, u.GetID(db), form.Value, form.Value, form.Value, form.Value)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"status":  false,
