@@ -366,8 +366,10 @@ func QuotaAPI(c *gin.Context) {
 
 	db := utils.GetDBFromContext(c)
 	c.JSON(200, gin.H{
-		"status": true,
-		"quota":  user.GetQuota(db),
+		"status":       true,
+		"quota":        user.GetQuota(db),
+		"credit_money": user.GetCreditMoney(db),
+		"draw_count":   user.GetDrawCount(db),
 	})
 }
 

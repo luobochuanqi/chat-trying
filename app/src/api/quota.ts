@@ -1,14 +1,18 @@
 import axios from "axios";
 
-export async function getQuota(): Promise<number> {
+export interface QuotaResponse {
+  status: boolean;
+  quota: number;
+  credit_money: number;
+  draw_count: number;
+}
+
+export async function getQuota(): Promise<QuotaResponse> {
   try {
     const response = await axios.get("/quota");
-    if (response.data.status) {
-      return response.data.quota as number;
-    }
+    return response.data as QuotaResponse;
   } catch (e) {
     console.debug(e);
+    return { status: false, quota: 0, credit_money: 0, draw_count: 0 };
   }
-
-  return NaN;
 }
