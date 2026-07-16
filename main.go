@@ -59,6 +59,15 @@ func main() {
 	admin.InitInstance()
 	channel.InitManager()
 
+	key := viper.GetString("deepseek.api_key")
+	if key != "" {
+		for _, ch := range channel.ConduitInstance.GetSequence() {
+			if ch.GetSecret() == "" {
+				ch.Secret = key
+			}
+		}
+	}
+
 	if cli.Run() {
 		return
 	}

@@ -40,12 +40,14 @@ channel:
   - name: deepseek
     type: openai
     endpoint: "https://api.deepseek.com"
+    state: true
     priority: 1
     weight: 1
     models:
       - deepseek-v4-flash
       - deepseek-v4-pro
     retry: 0
+    secret: ""
 
 market:
   - id: deepseek-v4-flash
