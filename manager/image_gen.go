@@ -3,7 +3,9 @@ package manager
 import (
 	"chat/adapter/volcengine"
 	"chat/auth"
+	"chat/globals"
 	"chat/utils"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -36,7 +38,12 @@ func DrawAPI(c *gin.Context) {
 	db := utils.GetDBFromContext(c)
 	user := &auth.User{Username: username}
 
-	if user.GetDrawCount(db) <= 0 {
+	drawCount := user.GetDrawCount(db)
+	globals.Info(fmt.Sprintf("[draw] user=%s draw_count=%d prompt=%s", username, drawCount,
+		func() string { if len(prompt) > 100 { return prompt[:100] + "..." } else { return prompt } }()))
+
+	if drawCount <= 0 {
+		globals.Warn(fmt.Sprintf("[draw] user=%s no quota", username))
 		c.JSON(http.StatusForbidden, gin.H{"error": "no draw quota remaining"})
 		return
 	}
@@ -47,16 +54,21 @@ func DrawAPI(c *gin.Context) {
 	inst := volcengine.NewInstance(endpoint, apiKey)
 	imageUrl, err := inst.CreateImageRequest(prompt)
 	if err != nil {
+		globals.Warn(fmt.Sprintf("[draw] user=%s generation failed err=%v", username, err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	globals.Info(fmt.Sprintf("[draw] user=%s storing image url=%s", username, imageUrl))
 	localPath := utils.StoreImage(imageUrl)
 	user.DecreaseDrawCount(db, 1)
+	newCount := user.GetDrawCount(db)
+
+	globals.Info(fmt.Sprintf("[draw] user=%s complete draw_count=%d->%d local=%s", username, drawCount, newCount, localPath))
 
 	c.JSON(http.StatusOK, gin.H{
 		"url":        localPath,
 		"prompt":     prompt,
-		"draw_count": user.GetDrawCount(db),
+		"draw_count": newCount,
 	})
 }

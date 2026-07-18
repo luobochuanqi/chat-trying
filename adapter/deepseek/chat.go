@@ -57,6 +57,14 @@ func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) 
 		messages[0].Role = globals.User
 	}
 
+	toolsCount := 0
+	if props.Tools != nil {
+		toolsCount = len(*props.Tools)
+	}
+	globals.Info(fmt.Sprintf("[deepseek] request model=%s messages=%d stream=%v tools=%d max_tokens=%v",
+		props.Model, len(messages), stream, toolsCount,
+		func() string { if props.MaxTokens != nil { return fmt.Sprintf("%d", *props.MaxTokens) } else { return "nil" } }()))
+
 	body := ChatRequest{
 		Model:            props.Model,
 		Messages:         messages,
@@ -136,6 +144,8 @@ func (c *ChatInstance) ProcessLine(data string) (string, error) {
 }
 
 func (c *ChatInstance) CreateChatRequest(props *adaptercommon.ChatProps) (string, error) {
+	globals.Info(fmt.Sprintf("[deepseek] non-stream request model=%s messages=%d", props.Model, len(props.Message)))
+
 	res, err := utils.Post(
 		c.GetChatEndpoint(),
 		c.GetHeader(),
@@ -144,12 +154,24 @@ func (c *ChatInstance) CreateChatRequest(props *adaptercommon.ChatProps) (string
 	)
 
 	if err != nil || res == nil {
+		globals.Warn(fmt.Sprintf("[deepseek] non-stream request failed model=%s err=%v", props.Model, err))
 		return "", fmt.Errorf("deepseek error: %s", err.Error())
 	}
 
 	data := utils.MapToStruct[ChatResponse](res)
 	if data == nil {
+		globals.Warn(fmt.Sprintf("[deepseek] non-stream parse failed model=%s", props.Model))
 		return "", fmt.Errorf("deepseek error: cannot parse response")
+	}
+
+	if data.Usage.PromptTokens > 0 {
+		globals.Info(fmt.Sprintf(
+			"[deepseek] non-stream complete model=%s prompt=%d completion=%d total=%d",
+			props.Model,
+			data.Usage.PromptTokens,
+			data.Usage.CompletionTokens,
+			data.Usage.TotalTokens,
+		))
 	}
 
 	if len(data.Choices) == 0 {
@@ -249,15 +271,31 @@ func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, c
 	if err != nil {
 		if form := processChatErrorResponse(err.Body); form != nil {
 			if form.Error.Type == "" && form.Error.Message == "" {
+				globals.Warn(fmt.Sprintf("[deepseek] stream error model=%s raw=%s", props.Model, err.Body))
 				return errors.New(utils.ToMarkdownCode("json", err.Body))
 			}
+			globals.Warn(fmt.Sprintf("[deepseek] stream error model=%s type=%s message=%s", props.Model, form.Error.Type, form.Error.Message))
 			return errors.New(fmt.Sprintf("deepseek error: %s (type: %s)", form.Error.Message, form.Error.Type))
 		}
+		globals.Warn(fmt.Sprintf("[deepseek] stream error model=%s err=%s", props.Model, err.Error.Error()))
 		return err.Error
 	}
 
 	if lastUsage != nil && props.UsageCallback != nil {
 		props.UsageCallback(lastUsage.PromptCacheHitTokens, lastUsage.PromptCacheMissTokens, lastUsage.CompletionTokens)
+	}
+
+	if lastUsage != nil {
+		globals.Info(fmt.Sprintf(
+			"[deepseek] stream complete model=%s prompt_tokens=%d cache_hit=%d cache_miss=%d completion=%d",
+			props.Model,
+			lastUsage.PromptTokens,
+			lastUsage.PromptCacheHitTokens,
+			lastUsage.PromptCacheMissTokens,
+			lastUsage.CompletionTokens,
+		))
+	} else {
+		globals.Info(fmt.Sprintf("[deepseek] stream complete model=%s (no usage data)", props.Model))
 	}
 
 	return nil
