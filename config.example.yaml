@@ -30,6 +30,8 @@ system:
   common:
     imagestore: true
     promptstore: false
+  search:
+    endpoint: "http://localhost:8080"
 
 student:
   initial_credit: 10.0
@@ -68,14 +70,38 @@ market:
 charge:
   - type: token-billing
     models: [deepseek-v4-flash]
-    input: 0.001
-    output: 0.002
+    input: 1.0
+    output: 2.0
+    cache_hit: 0.02
+    cache_miss: 1.0
     anonymous: false
   - type: token-billing
     models: [deepseek-v4-pro]
-    input: 0.003
-    output: 0.006
+    input: 3.0
+    output: 6.0
+    cache_hit: 0.025
+    cache_miss: 3.0
     anonymous: false
   - type: non-billing
     models: [seedream-draw]
     anonymous: false
+
+tools:
+  - name: web_search
+    description: 搜索互联网获取最新信息
+    parameters:
+      type: object
+      properties:
+        query:
+          type: string
+          description: 搜索关键词
+      required: [query]
+  - name: calculator
+    description: 执行数学计算
+    parameters:
+      type: object
+      properties:
+        expression:
+          type: string
+          description: 数学表达式，如 "2+3*4"
+      required: [expression]

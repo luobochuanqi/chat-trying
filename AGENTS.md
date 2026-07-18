@@ -10,11 +10,13 @@ go build -o chat -a -ldflags="-extldflags=-static" .
 cd app && pnpm install && pnpm run build
 ```
 
-Backend is Go 1.20 with Gin. Frontend is React 18 + Vite + TypeScript + pnpm. Zero tests.
+Backend is Go 1.20 with Gin. Frontend is React 18 + Vite + TypeScript + pnpm. Redis is required at runtime (connection/cache.go). Zero tests.
+
+Server listens on port 8094 by default (config key: `server.port`).
 
 ## Config bootstrap flow
 
-On first startup, the app copies `config.example.yaml` → `config/config.yaml` via `utils/config.go:16-21`. **This only happens once** — if `config/config.yaml` already exists (e.g., from a previous deployment on a mounted volume), it is never overwritten. Environment variables (`viper.AutomaticEnv()`) override config values.
+On first startup, the app copies `config.example.yaml` → `config/config.yaml` via `utils/bootstrap.go:16-21`. **This only happens once** — if `config/config.yaml` already exists (e.g., from a previous deployment on a mounted volume), it is never overwritten. Environment variables (`viper.AutomaticEnv()`) override config values, with dots in config keys replaced by underscores (e.g. `deepseek.api_key` → `DEEPSEEK_API_KEY`).
 
 Key env vars: `DEEPSEEK_API_KEY`, `VOLCENGINE_API_KEY`, `SERVE_STATIC`.
 
@@ -56,7 +58,7 @@ This is a special draw-only model. The backend `CanEnableModel` checks `draw_cou
 
 ## CI
 
-Single workflow: `.github/workflows/docker-ci.yaml`. Builds amd64 only, pushes to `ghcr.io/<owner>/chat-trying:latest`. GitHub Container Registry must be set to **public** in Package settings after first push.
+Single workflow: `.github/workflows/docker-ci.yaml`. Builds amd64 only, pushes to `ghcr.io/<owner>/chat-trying:latest` and a versioned tag from `app/src/conf/version.json`. GitHub Container Registry must be set to **public** in Package settings after first push.
 
 ## Admin account
 
@@ -65,3 +67,11 @@ First boot with empty DB auto-creates `root` / `chatnio123456` (`connection/data
 ## Students CSV
 
 Format: `中文名,密码` per line. Usernames auto-generated as `s001`, `s002`, etc. `bind_id` values start at `1001`. Path in config: `student.csv`.
+
+## Docker compose
+
+`docker-compose.yaml` expects `GHCR_USER` env var (set in `.env` or `.env.example`). Maps host port `8000` → container `8094`. Redis runs as a separate `redis:alpine` service.
+
+## Cache
+
+Redis handles two layers: user auth tokens with 72h TTL, and SMS/phone verification codes. In debug mode, the entire Redis cache is flushed on startup (`connection/cache.go:42`).
