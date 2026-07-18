@@ -585,6 +585,15 @@ func SubmitGalleryAPI(c *gin.Context) {
 		return
 	}
 
+	imagePath := utils.StoreImage(form.ImageURL)
+	if imagePath == form.ImageURL && globals.AcceptImageStore {
+		c.JSON(http.StatusOK, gin.H{
+			"status": false,
+			"error":  "failed to download image",
+		})
+		return
+	}
+
 	db := utils.GetDBFromContext(c)
 	var displayName string
 	if err := globals.QueryRowDb(db, "SELECT display_name FROM auth WHERE id = ?", user.GetID(db)).Scan(&displayName); err != nil || displayName == "" {
@@ -593,7 +602,7 @@ func SubmitGalleryAPI(c *gin.Context) {
 
 	_, err := globals.ExecDb(db, `
 		INSERT INTO gallery (user_id, prompt, image_url, author_name) VALUES (?, ?, ?, ?)
-	`, user.GetID(db), form.Prompt, form.ImageURL, displayName)
+	`, user.GetID(db), form.Prompt, imagePath, displayName)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"status": false,

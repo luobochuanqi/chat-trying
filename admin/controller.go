@@ -2,6 +2,7 @@ package admin
 
 import (
 	"chat/admin/analysis"
+	"chat/globals"
 	"chat/utils"
 	"net/http"
 	"strconv"
@@ -503,4 +504,16 @@ func ConsoleLoggerAPI(c *gin.Context) {
 		"status":  true,
 		"content": content,
 	})
+}
+
+func ClearAllConversations(c *gin.Context) {
+	db := utils.GetDBFromContext(c)
+
+	_, err := globals.ExecDb(db, `DELETE FROM conversation`)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{"status": false, "message": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"status": true, "message": "all conversations cleared"})
 }

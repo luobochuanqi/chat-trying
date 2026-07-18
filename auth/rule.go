@@ -55,6 +55,9 @@ func CanEnableModel(db *sql.DB, user *User, model string, messages []globals.Mes
 
 	// Get user's current quota
 	quota := user.GetQuota(db)
+	if quota <= 0 {
+		return fmt.Errorf("额度不足，请联系管理员充值 (当前余额: ¥%.2f)", quota)
+	}
 	if quota < estimatedInputCost {
 		return fmt.Errorf(ErrEstimatedCost, model, estimatedInputCost, quota)
 	}
