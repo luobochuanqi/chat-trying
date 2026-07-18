@@ -31,6 +31,7 @@ type Conversation struct {
 	PresencePenalty   *float32 `json:"presence_penalty,omitempty"`
 	FrequencyPenalty  *float32 `json:"frequency_penalty,omitempty"`
 	RepetitionPenalty *float32 `json:"repetition_penalty,omitempty"`
+	ToolNames         []string `json:"tool_names,omitempty"`
 }
 
 type FormMessage struct {
@@ -49,6 +50,7 @@ type FormMessage struct {
 	PresencePenalty   *float32 `json:"presence_penalty,omitempty"`
 	FrequencyPenalty  *float32 `json:"frequency_penalty,omitempty"`
 	RepetitionPenalty *float32 `json:"repetition_penalty,omitempty"`
+	ToolNames         []string `json:"tool_names,omitempty"`
 }
 
 func NewAnonymousConversation() *Conversation {
@@ -182,6 +184,14 @@ func (c *Conversation) GetMaxTokens() *int {
 
 func (c *Conversation) SetMaxTokens(maxTokens *int) {
 	c.MaxTokens = maxTokens
+}
+
+func (c *Conversation) GetToolNames() []string {
+	return c.ToolNames
+}
+
+func (c *Conversation) SetToolNames(toolNames []string) {
+	c.ToolNames = toolNames
 }
 
 func (c *Conversation) SetContextLength(context int, ignore bool) {
@@ -328,6 +338,7 @@ func (c *Conversation) ApplyParam(form *FormMessage) {
 	c.SetPresencePenalty(form.PresencePenalty)
 	c.SetFrequencyPenalty(form.FrequencyPenalty)
 	c.SetRepetitionPenalty(form.RepetitionPenalty)
+	c.SetToolNames(form.ToolNames)
 }
 
 func (c *Conversation) AddMessageFromByte(data []byte) (string, error) {

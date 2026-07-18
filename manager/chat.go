@@ -3,6 +3,7 @@ package manager
 import (
 	"chat/adapter"
 	adaptercommon "chat/adapter/common"
+	"chat/addition/skills"
 	"chat/addition/web"
 	"chat/admin"
 	"chat/auth"
@@ -162,6 +163,7 @@ func createChatTask(
 			return
 		}
 
+		tools := getToolsForInstance(instance)
 		hit, err := channel.NewChatRequestWithCache(
 			cache, buffer,
 			auth.GetGroup(db, user),
@@ -175,6 +177,11 @@ func createChatTask(
 				PresencePenalty:   instance.GetPresencePenalty(),
 				FrequencyPenalty:  instance.GetFrequencyPenalty(),
 				RepetitionPenalty: instance.GetRepetitionPenalty(),
+				Tools:             tools,
+				ToolChoice:        getToolChoice(tools != nil),
+				UsageCallback: func(cacheHit, cacheMiss, completion int) {
+					buffer.SetDetailedUsage(cacheHit, cacheMiss, completion)
+				},
 			}, buffer),
 
 			// the function to handle the chunk data
@@ -278,38 +285,126 @@ func ChatHandler(conn *Connection, user *auth.User, instance *conversation.Conve
 		return message
 	}
 
-	buffer := utils.NewBuffer(model, segment, channel.ChargeInstance.GetCharge(model))
-	hit, err := createChatTask(conn, user, buffer, db, cache, model, instance, segment, plan)
+	const maxToolIterations = 5
 
-	admin.AnalyseRequest(model, buffer, err)
-	if adapter.IsAvailableError(err) {
-		globals.Warn(fmt.Sprintf("%s (model: %s, client: %s)", err, model, conn.GetCtx().ClientIP()))
+	for iteration := 0; iteration < maxToolIterations; iteration++ {
+		if iteration > 0 {
+			segment = adapter.ClearMessages(model, web.ToChatSearched(instance, false))
+		}
 
-		auth.RevertSubscriptionUsage(db, cache, user, model)
-		conn.Send(globals.ChatSegmentResponse{
-			Message: err.Error(),
-			End:     true,
+		buffer := utils.NewBuffer(model, segment, channel.ChargeInstance.GetCharge(model))
+		hit, err := createChatTask(conn, user, buffer, db, cache, model, instance, segment, plan)
+
+		admin.AnalyseRequest(model, buffer, err)
+		if adapter.IsAvailableError(err) {
+			globals.Warn(fmt.Sprintf("%s (model: %s, client: %s)", err, model, conn.GetCtx().ClientIP()))
+
+			auth.RevertSubscriptionUsage(db, cache, user, model)
+			conn.Send(globals.ChatSegmentResponse{
+				Message: err.Error(),
+				End:     true,
+			})
+			return err.Error()
+		}
+
+		if !hit {
+			CollectQuota(conn.GetCtx(), user, buffer, plan, err)
+		}
+
+		if buffer.IsDetailed {
+			conn.Send(globals.ChatSegmentResponse{
+				Keyword:          "usage",
+				CacheHitTokens:   buffer.CacheHitTokens,
+				CacheMissTokens:  buffer.CacheMissTokens,
+				CompletionTokens: buffer.CompletionTokens,
+				Quota:            buffer.GetQuota(),
+			})
+		}
+
+		toolCalls := buffer.GetToolCalls()
+		if toolCalls == nil || skills.ToolInstance == nil {
+			if buffer.IsEmpty() {
+				conn.Send(globals.ChatSegmentResponse{
+					Message: defaultMessage,
+					End:     true,
+				})
+				return defaultMessage
+			}
+
+			conn.Send(globals.ChatSegmentResponse{
+				End:   true,
+				Quota: buffer.GetQuota(),
+				Plan:  plan,
+			})
+
+			return buffer.ReadWithDefault(defaultMessage)
+		}
+
+		assistantContent := buffer.Read()
+		instance.AddMessage(globals.Message{
+			Role:      globals.Assistant,
+			Content:   assistantContent,
+			ToolCalls: toolCalls,
 		})
-		return err.Error()
-	}
 
-	if !hit {
-		CollectQuota(conn.GetCtx(), user, buffer, plan, err)
-	}
+		for _, tc := range *toolCalls {
+			conn.Send(globals.ChatSegmentResponse{
+				Message:  fmt.Sprintf("正在使用 %s 工具...", tc.Function.Name),
+				Keyword:  "tool_status",
+				Status:   "executing",
+				ToolName: tc.Function.Name,
+				Quota:    buffer.GetQuota(),
+				End:      false,
+			})
 
-	if buffer.IsEmpty() {
-		conn.Send(globals.ChatSegmentResponse{
-			Message: defaultMessage,
-			End:     true,
-		})
-		return defaultMessage
+			args, parseErr := utils.UnmarshalString[map[string]interface{}](tc.Function.Arguments)
+			if parseErr != nil {
+				globals.Warn(fmt.Sprintf("[tools] failed to parse args for %s: %s", tc.Function.Name, parseErr.Error()))
+				args = make(map[string]interface{})
+			}
+
+			result, execErr := skills.ToolInstance.Execute(tc.Function.Name, args)
+			if execErr != nil {
+				result = fmt.Sprintf("工具执行失败: %s", execErr.Error())
+				globals.Warn(fmt.Sprintf("[tools] execution failed for %s: %s", tc.Function.Name, execErr.Error()))
+			}
+
+			conn.Send(globals.ChatSegmentResponse{
+				Keyword:  "tool_status",
+				Status:   "done",
+				ToolName: tc.Function.Name,
+				Quota:    buffer.GetQuota(),
+				End:      false,
+			})
+
+			instance.AddMessage(globals.Message{
+				Role:       "tool",
+				Content:    result,
+				ToolCallId: &tc.Id,
+			})
+		}
 	}
 
 	conn.Send(globals.ChatSegmentResponse{
-		End:   true,
-		Quota: buffer.GetQuota(),
-		Plan:  plan,
+		End: true,
 	})
+	return defaultMessage
+}
 
-	return buffer.ReadWithDefault(defaultMessage)
+func getToolsForInstance(instance *conversation.Conversation) *globals.FunctionTools {
+	names := instance.GetToolNames()
+	if len(names) == 0 || skills.ToolInstance == nil {
+		return nil
+	}
+	tools := skills.ToolInstance.GetToolsForRequest(names)
+	result := globals.FunctionTools(tools)
+	return &result
+}
+
+func getToolChoice(hasTools bool) *interface{} {
+	if !hasTools {
+		return nil
+	}
+	var choice interface{} = "auto"
+	return &choice
 }

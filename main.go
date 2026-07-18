@@ -3,6 +3,7 @@ package main
 import (
 	"chat/adapter"
 	"chat/addition"
+	"chat/addition/skills"
 	"chat/admin"
 	"chat/auth"
 	"chat/channel"
@@ -57,6 +58,7 @@ func registerApiRouter(engine *gin.Engine) {
 func main() {
 	utils.ReadConf()
 	admin.InitInstance()
+	skills.InitTools()
 	channel.InitManager()
 
 	key := viper.GetString("deepseek.api_key")
