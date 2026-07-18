@@ -25,13 +25,22 @@ func InitTools() {
 	ToolInstance = &ToolManager{Tools: make(map[string]ToolConfig)}
 	var tools []ToolConfig
 	if err := viper.UnmarshalKey("tools", &tools); err != nil {
-		globals.Warn("failed to load tools config: " + err.Error())
+		globals.Warn("[skills] failed to load tools config: " + err.Error())
+		globals.Warn("[skills] please add a `tools` section to config/config.yaml (see config.example.yaml for reference)")
+		return
+	}
+	if len(tools) == 0 {
+		globals.Warn("[skills] no tools configured — please add a `tools` section to config/config.yaml")
 		return
 	}
 	for _, t := range tools {
 		ToolInstance.Tools[t.Name] = t
 	}
-	globals.Info(fmt.Sprintf("[skills] loaded %d tools", len(tools)))
+	names := make([]string, 0, len(tools))
+	for _, t := range tools {
+		names = append(names, t.Name)
+	}
+	globals.Info(fmt.Sprintf("[skills] loaded %d tools: %v", len(tools), names))
 }
 
 func (m *ToolManager) GetToolsForRequest(toolNames []string) []globals.ToolObject {
@@ -85,8 +94,11 @@ func (m *ToolManager) Execute(name string, args map[string]interface{}) (string,
 
 func GetToolsAPI(c *gin.Context) {
 	if ToolInstance == nil {
+		globals.Info("[skills] GET /api/tools — ToolInstance is nil (InitTools not called?)")
 		c.JSON(http.StatusOK, gin.H{"status": true, "data": []interface{}{}})
 		return
 	}
+	count := len(ToolInstance.Tools)
+	globals.Info(fmt.Sprintf("[skills] GET /api/tools — returning %d tools", count))
 	c.JSON(http.StatusOK, gin.H{"status": true, "data": ToolInstance.Tools})
 }

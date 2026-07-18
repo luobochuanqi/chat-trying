@@ -24,9 +24,18 @@ function SkillSelector({ selected, onChange }: Props) {
     fetch("/api/tools")
       .then((r) => r.json())
       .then((data) => {
-        if (data.status) setSkills(Object.values(data.data));
+        console.log("[skills] tools response:", data);
+        if (data.status && data.data) {
+          const tools = Object.values(data.data) as Skill[];
+          console.log("[skills] loaded tools:", tools.length);
+          setSkills(tools);
+        } else {
+          console.warn("[skills] tools response status false or no data, check config.yaml `tools` section");
+        }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.error("[skills] failed to fetch tools:", err);
+      });
   }, []);
 
   useEffect(() => {

@@ -112,12 +112,21 @@ func InitRootUser(db *sql.DB) {
 
 	if count == 0 {
 		globals.Debug("[service] no user found, creating root user (username: root, password: chatnio123456, email: root@example.com)")
-		_, err := globals.ExecDb(db, `
+		result, err := globals.ExecDb(db, `
 			INSERT INTO auth (username, password, email, is_admin, bind_id, token)
 			VALUES (?, ?, ?, ?, ?, ?)
 		`, "root", utils.Sha2Encrypt("chatnio123456"), "root@example.com", true, 0, "root")
 		if err != nil {
 			globals.Warn(fmt.Sprintf("[service] failed to create root user: %s", err.Error()))
+			return
+		}
+		rootId, _ := result.LastInsertId()
+		globals.Info(fmt.Sprintf("[service] root user created with id=%d, creating quota row", rootId))
+		_, err = globals.ExecDb(db, `
+			INSERT INTO quota (user_id, quota, used, credit_money, draw_count) VALUES (?, ?, 0, ?, ?)
+		`, rootId, 999.0, 999.0, 9999)
+		if err != nil {
+			globals.Warn(fmt.Sprintf("[service] failed to create root quota: %s", err.Error()))
 		}
 	} else {
 		globals.Debug(fmt.Sprintf("[service] %d user(s) found, skip creating root user", count))

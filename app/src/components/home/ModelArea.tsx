@@ -202,6 +202,8 @@ export function ModelArea() {
   const supportModels = useSelector(selectSupportModels);
   const modelList = useSelector(selectModelList);
   const subscriptionData = useSelector(subscriptionDataSelector);
+  const currentId = useSelector((s: any) => s.chat?.current);
+  const conversations = useSelector((s: any) => s.chat?.conversations);
 
   modelEvent.bind((target: string) => {
     if (supportModels.find((m) => m.id === target)) {
@@ -248,10 +250,22 @@ export function ModelArea() {
           router.navigate("/model");
           return;
         }
-        const model = GetModel(supportModels, value);
-        console.debug(`[model] select model: ${model.name} (id: ${model.id})`);
+        const targetModel = GetModel(supportModels, value);
+        console.debug(`[model] select model: ${targetModel.name} (id: ${targetModel.id})`);
 
-        if (!auth && model.auth) {
+        const conv = conversations?.[currentId];
+        const hasMessages = conv?.messages?.length > 0;
+
+        if (value === "seedream-draw" && hasMessages) {
+          toast(t("draw-new-conversation") || "生图需要新建一个对话，请先点击新对话按钮");
+          return;
+        }
+        if (model === "seedream-draw" && value !== "seedream-draw" && hasMessages) {
+          toast(t("draw-conversation-only") || "生图对话不能切换为语言模型，请新建对话");
+          return;
+        }
+
+        if (!auth && targetModel.auth) {
           toast(t("login-require"), {
             action: {
               label: t("login"),
