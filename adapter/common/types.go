@@ -26,6 +26,8 @@ type VideoProps struct {
 	User string `json:"-"`
 }
 
+type UsageCallback func(cacheHit, cacheMiss, completion int)
+
 type ChatProps struct {
 	RequestProps
 
@@ -43,6 +45,7 @@ type ChatProps struct {
 	Tools             *globals.FunctionTools `json:"tools,omitempty"`
 	ToolChoice        *interface{}           `json:"tool_choice,omitempty"`
 	Buffer            *utils.Buffer          `json:"-"`
+	UsageCallback     UsageCallback          `json:"-"`
 }
 
 func (c *ChatProps) SetupBuffer(buf *utils.Buffer) {

@@ -19,12 +19,17 @@ type Chunk struct {
 }
 
 type ChatSegmentResponse struct {
-	Conversation int64   `json:"conversation"`
-	Quota        float32 `json:"quota"`
-	Keyword      string  `json:"keyword"`
-	Message      string  `json:"message"`
-	End          bool    `json:"end"`
-	Plan         bool    `json:"plan"`
+	Conversation     int64   `json:"conversation"`
+	Quota            float32 `json:"quota"`
+	Keyword          string  `json:"keyword"`
+	Message          string  `json:"message"`
+	End              bool    `json:"end"`
+	Plan             bool    `json:"plan"`
+	CacheHitTokens   int     `json:"cacheHitTokens,omitempty"`
+	CacheMissTokens  int     `json:"cacheMissTokens,omitempty"`
+	CompletionTokens int     `json:"completionTokens,omitempty"`
+	Status           string  `json:"status,omitempty"`
+	ToolName         string  `json:"toolName,omitempty"`
 }
 
 type GenerationSegmentResponse struct {

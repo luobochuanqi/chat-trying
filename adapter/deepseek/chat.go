@@ -51,15 +51,13 @@ func (c *ChatInstance) GetChatEndpoint() string {
 
 func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) interface{} {
 	messages := props.Message
-	// because of deepseek first message must be user role
-	// convert assistant message to user message
 	if len(messages) > 0 && messages[0].Role == globals.Assistant {
 		messages = make([]globals.Message, len(props.Message))
 		copy(messages, props.Message)
 		messages[0].Role = globals.User
 	}
 
-	return ChatRequest{
+	body := ChatRequest{
 		Model:            props.Model,
 		Messages:         messages,
 		MaxTokens:        props.MaxTokens,
@@ -68,7 +66,15 @@ func (c *ChatInstance) GetChatBody(props *adaptercommon.ChatProps, stream bool) 
 		TopP:             props.TopP,
 		PresencePenalty:  props.PresencePenalty,
 		FrequencyPenalty: props.FrequencyPenalty,
+		Tools:            props.Tools,
+		ToolChoice:       props.ToolChoice,
 	}
+
+	if stream {
+		body.StreamOptions = &StreamOptions{IncludeUsage: true}
+	}
+
+	return body
 }
 
 func processChatResponse(data string) *ChatResponse {
@@ -162,12 +168,76 @@ func (c *ChatInstance) CreateChatRequest(props *adaptercommon.ChatProps) (string
 func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, callback globals.Hook) error {
 	c.isFirstReasoning = true
 	c.isReasonOver = false
+	var lastUsage *ChatStreamUsage
+	var accumulatedToolCalls globals.ToolCalls
 	err := utils.EventScanner(&utils.EventScannerProps{
 		Method:  "POST",
 		Uri:     c.GetChatEndpoint(),
 		Headers: c.GetHeader(),
 		Body:    c.GetChatBody(props, true),
 		Callback: func(data string) error {
+			form := processChatStreamResponse(data)
+
+			if form != nil {
+				if form.Usage != nil {
+					lastUsage = form.Usage
+				}
+
+				var finishReason string
+				if len(form.Choices) > 0 {
+					delta := form.Choices[0].Delta
+					if delta.ToolCalls != nil {
+						for _, chunk := range *delta.ToolCalls {
+							found := false
+							if chunk.Id != "" {
+								for j := range accumulatedToolCalls {
+									if accumulatedToolCalls[j].Id == chunk.Id {
+										accumulatedToolCalls[j].Function.Arguments += chunk.Function.Arguments
+										found = true
+										break
+									}
+								}
+							}
+							if !found && chunk.Index != nil {
+								idx := *chunk.Index
+								for idx >= len(accumulatedToolCalls) {
+									accumulatedToolCalls = append(accumulatedToolCalls, globals.ToolCall{})
+								}
+								if accumulatedToolCalls[idx].Id == "" {
+									accumulatedToolCalls[idx] = chunk
+								} else {
+									accumulatedToolCalls[idx].Function.Arguments += chunk.Function.Arguments
+								}
+								found = true
+							}
+							if !found {
+								if len(accumulatedToolCalls) > 0 {
+									accumulatedToolCalls[len(accumulatedToolCalls)-1].Function.Arguments += chunk.Function.Arguments
+								} else {
+									accumulatedToolCalls = append(accumulatedToolCalls, chunk)
+								}
+							}
+						}
+					}
+					finishReason = form.Choices[0].FinishReason
+				}
+
+				partial, err := c.ProcessLine(data)
+				if err != nil {
+					return err
+				}
+
+				chunk := &globals.Chunk{Content: partial}
+
+				if finishReason == "tool_calls" {
+					tools := make(globals.ToolCalls, len(accumulatedToolCalls))
+					copy(tools, accumulatedToolCalls)
+					chunk.ToolCall = &tools
+				}
+
+				return callback(chunk)
+			}
+
 			partial, err := c.ProcessLine(data)
 			if err != nil {
 				return err
@@ -184,6 +254,10 @@ func (c *ChatInstance) CreateStreamChatRequest(props *adaptercommon.ChatProps, c
 			return errors.New(fmt.Sprintf("deepseek error: %s (type: %s)", form.Error.Message, form.Error.Type))
 		}
 		return err.Error
+	}
+
+	if lastUsage != nil && props.UsageCallback != nil {
+		props.UsageCallback(lastUsage.PromptCacheHitTokens, lastUsage.PromptCacheMissTokens, lastUsage.CompletionTokens)
 	}
 
 	return nil

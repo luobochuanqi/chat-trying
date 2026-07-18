@@ -92,6 +92,9 @@ func NumTokensFromResponse(response string, model string) int {
 
 func CountInputQuota(charge Charge, token int) float32 {
 	if charge.GetType() == globals.TokenBilling {
+		if isPerMillionPricing(charge) {
+			return float32(token) / 1e6 * charge.GetInput()
+		}
 		return float32(token) / 1000 * charge.GetInput()
 	}
 
@@ -101,6 +104,9 @@ func CountInputQuota(charge Charge, token int) float32 {
 func CountOutputToken(charge Charge, token int) float32 {
 	switch charge.GetType() {
 	case globals.TokenBilling:
+		if isPerMillionPricing(charge) {
+			return float32(token) / 1e6 * charge.GetOutput()
+		}
 		return float32(token) / 1000 * charge.GetOutput()
 	case globals.TimesBilling:
 		return charge.GetOutput()

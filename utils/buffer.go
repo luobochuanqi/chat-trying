@@ -16,6 +16,7 @@ type Charge interface {
 	IsBilling() bool
 	IsBillingType(t string) bool
 	GetLimit() float32
+	GetDetailedCharge() (input, output, cacheHit, cacheMiss float32)
 }
 
 type Buffer struct {
@@ -35,6 +36,16 @@ type Buffer struct {
 	TokenName       string                `json:"-"`
 	Charge          Charge                `json:"-"`
 	VisionRecall    bool                  `json:"-"`
+
+	CacheHitTokens    int  `json:"-"`
+	CacheMissTokens   int  `json:"-"`
+	CompletionTokens  int  `json:"-"`
+	IsDetailed        bool `json:"-"`
+}
+
+func isPerMillionPricing(charge Charge) bool {
+	_, _, cacheHit, cacheMiss := charge.GetDetailedCharge()
+	return cacheHit > 0 || cacheMiss > 0
 }
 
 func initInputToken(model string, history []globals.Message) int {
@@ -86,7 +97,22 @@ func (b *Buffer) GetCursor() int {
 }
 
 func (b *Buffer) GetQuota() float32 {
+	if b.IsDetailed && b.Charge != nil {
+		_, outputPrice, cacheHitPrice, cacheMissPrice := b.Charge.GetDetailedCharge()
+		if cacheHitPrice > 0 || cacheMissPrice > 0 {
+			return float32(b.CacheHitTokens)*cacheHitPrice/1e6 +
+				float32(b.CacheMissTokens)*cacheMissPrice/1e6 +
+				float32(b.CompletionTokens)*outputPrice/1e6
+		}
+	}
 	return b.Quota + CountOutputToken(b.Charge, b.CountOutputToken(true))
+}
+
+func (b *Buffer) SetDetailedUsage(cacheHit, cacheMiss, completion int) {
+	b.CacheHitTokens = cacheHit
+	b.CacheMissTokens = cacheMiss
+	b.CompletionTokens = completion
+	b.IsDetailed = true
 }
 
 func (b *Buffer) GetRecordQuota() float32 {
@@ -134,7 +160,11 @@ func (b *Buffer) AddImage(image *Image) {
 	b.InputTokens += tokens
 
 	if b.Charge.IsBillingType(globals.TokenBilling) {
-		b.Quota += float32(tokens) / 1000 * b.Charge.GetInput()
+		if isPerMillionPricing(b.Charge) {
+			b.Quota += float32(tokens) / 1e6 * b.Charge.GetInput()
+		} else {
+			b.Quota += float32(tokens) / 1000 * b.Charge.GetInput()
+		}
 	}
 }
 

@@ -288,12 +288,18 @@ func (c *Charge) Contains(model string) bool {
 	return utils.Contains(model, c.Models)
 }
 
+func (c *Charge) GetDetailedCharge() (input, output, cacheHit, cacheMiss float32) {
+	return c.Input, c.Output, c.CacheHit, c.CacheMiss
+}
+
 func (c *Charge) New(model string) *Charge {
 	return &Charge{
 		Type:      c.Type,
 		Models:    []string{model},
 		Input:     c.Input,
 		Output:    c.Output,
+		CacheHit:  c.CacheHit,
+		CacheMiss: c.CacheMiss,
 		Anonymous: c.Anonymous,
 	}
 }
