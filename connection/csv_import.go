@@ -57,28 +57,48 @@ func ImportStudents(db *sql.DB) {
 		return
 	}
 
+	var maxBindId int
+	if err := globals.QueryRowDb(db, "SELECT COALESCE(MAX(bind_id), 1000) FROM auth").Scan(&maxBindId); err != nil {
+		globals.Warn(fmt.Sprintf("[csv] failed to query max bind_id: %s, using 1000", err.Error()))
+		maxBindId = 1000
+	}
+	currentBindId := maxBindId + 1
+
 	imported := 0
 	for i, record := range records {
-		if len(record) < 2 {
+		if len(record) < 1 {
 			continue
 		}
 		displayName := strings.TrimSpace(record[0])
-		password := strings.TrimSpace(record[1])
-		if displayName == "" || password == "" {
+		if displayName == "" {
 			continue
 		}
 
-		username := fmt.Sprintf("s%03d", i+1)
+		password := "123456"
+		if len(record) >= 2 {
+			if p := strings.TrimSpace(record[1]); p != "" {
+				password = p
+			}
+		}
 
-		if isUserExist(db, username) {
-			continue
+		baseUsername := utils.ConvertCNToPinyin(displayName)
+		if baseUsername == "" {
+			baseUsername = fmt.Sprintf("s%03d", i+1)
+		}
+		username := baseUsername
+		count := 0
+		for isUserExist(db, username) {
+			count++
+			username = fmt.Sprintf("%s%d", baseUsername, count)
 		}
 
 		hashedPassword := utils.Sha2Encrypt(password)
+		bindId := currentBindId
+		currentBindId++
 		_, err := globals.ExecDb(db, `
 			INSERT INTO auth (username, password, email, is_admin, bind_id, token, display_name)
 			VALUES (?, ?, ?, ?, ?, ?, ?)
-		`, username, hashedPassword, fmt.Sprintf("%s@student.local", username), false, i+1001, "student", displayName)
+		`, username, hashedPassword, fmt.Sprintf("%s@student.local", username), false, bindId, "student", displayName)
 		if err != nil {
 			globals.Warn(fmt.Sprintf("[csv] failed to create user %s: %s", username, err.Error()))
 			continue
@@ -86,6 +106,7 @@ func ImportStudents(db *sql.DB) {
 
 		var userId int64
 		if err := globals.QueryRowDb(db, "SELECT id FROM auth WHERE username = ?", username).Scan(&userId); err != nil {
+			globals.Warn(fmt.Sprintf("[csv] failed to get user id for %s: %s", username, err.Error()))
 			continue
 		}
 
