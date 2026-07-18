@@ -125,6 +125,58 @@
     }
   }
 
+  .message-tool-status {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    user-select: none;
+    gap: 4px;
+    border: 1px solid hsl(var(--input));
+    border-radius: var(--radius);
+    transition: 0.2s linear;
+    padding: 4px 8px;
+    width: max-content;
+    height: max-content;
+    white-space: nowrap;
+    margin-left: 3rem;
+    transition-property: border-color, color, background-color, width;
+
+    svg {
+      color: hsl(var(--text-secondary));
+    }
+
+    span {
+      font-size: 12px;
+      color: hsl(var(--text-secondary));
+    }
+  }
+
+  .message-usage {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    user-select: none;
+    gap: 4px;
+    border: 1px solid hsl(var(--input));
+    border-radius: var(--radius);
+    transition: 0.2s linear;
+    padding: 4px 8px;
+    width: max-content;
+    height: max-content;
+    white-space: nowrap;
+    margin-left: 3rem;
+    transition-property: border-color, color, background-color;
+
+    span {
+      font-size: 12px;
+      color: hsl(var(--text-secondary));
+    }
+
+    &:hover {
+      border-color: hsl(var(--border-hover));
+    }
+  }
+
   .message-content {
     display: flex;
     flex: 1 1 auto;
@@ -175,7 +227,15 @@
       padding: 0 !important;
     }
 
+    .message-usage {
+      margin-left: 0;
+    }
+
     .message-quota {
+      margin-left: 0;
+    }
+
+    .message-tool-status {
       margin-left: 0;
     }
 

@@ -13,6 +13,9 @@ export const quotaSlice = createSlice({
     setQuota: (state, action) => {
       state.quota = action.payload as number;
     },
+    deductQuota: (state, action) => {
+      state.quota = Math.max(0, state.quota - (action.payload as number));
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(refreshQuota.fulfilled, (state, action) => {
@@ -23,7 +26,7 @@ export const quotaSlice = createSlice({
   },
 });
 
-export const { setQuota } = quotaSlice.actions;
+export const { setQuota, deductQuota } = quotaSlice.actions;
 export default quotaSlice.reducer;
 
 export const quotaSelector = (state: RootState): number => state.quota.quota;

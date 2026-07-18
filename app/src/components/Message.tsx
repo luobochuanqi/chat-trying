@@ -13,6 +13,7 @@ import {
   Power,
   RotateCcw,
   Trash,
+  Wrench,
 } from "lucide-react";
 import { filterMessage } from "@/utils/processor.ts";
 import {
@@ -72,7 +73,26 @@ function MessageSegment(props: MessageProps) {
       }}
     >
       <MessageContent {...props} />
+      <MessageToolStatus message={message} />
+      <MessageUsage message={message} />
       <MessageQuota message={message} />
+    </div>
+  );
+}
+
+type MessageUsageProps = {
+  message: Message;
+};
+
+function MessageUsage({ message }: MessageUsageProps) {
+  if (message.role === UserRole || !message.usage) return null;
+
+  return (
+    <div className="message-usage">
+      <span>{message.usage.cacheHitTokens} hit</span>
+      <span>{message.usage.cacheMissTokens} miss</span>
+      <span>{message.usage.completionTokens} out</span>
+      <span>¥{message.usage.cost.toFixed(4)}</span>
     </div>
   );
 }
@@ -121,6 +141,35 @@ function MessageQuota({ message }: MessageQuotaProps) {
         </motion.span>
       </motion.div>
     )
+  );
+}
+
+type MessageToolStatusProps = {
+  message: Message;
+};
+
+function MessageToolStatus({ message }: MessageToolStatusProps) {
+  if (message.role === UserRole) return null;
+  if (!message.toolStatus) return null;
+
+  const isExecuting = message.toolStatus === "executing";
+
+  return (
+    <motion.div
+      className="message-tool-status"
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+    >
+      <Wrench
+        className={`h-3.5 w-3.5 ${isExecuting ? "animate-spin" : ""}`}
+      />
+      <span className="text-xs">
+        {isExecuting
+          ? `正在使用 ${message.toolName} 工具...`
+          : `${message.toolName} 完成`}
+      </span>
+    </motion.div>
   );
 }
 

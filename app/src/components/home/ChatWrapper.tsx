@@ -34,6 +34,7 @@ import { getModelFromId } from "@/conf/model.ts";
 import { ModelArea } from "@/components/home/ModelArea.tsx";
 import { toast } from "sonner";
 import { VoiceAction } from "@/components/VoiceProvider.tsx";
+import SkillSelector from "@/components/home/SkillSelector.tsx";
 import { AnimatePresence, motion } from "framer-motion";
 import DrawInterface from "@/components/home/DrawInterface.tsx";
 
@@ -66,6 +67,7 @@ function ChatWrapper() {
   const process = listenMessageEvent();
   const [files, fileDispatch] = useReducer(fileReducer, []);
   const [input, setInput] = useState("");
+  const [selectedTools, setSelectedTools] = useState<string[]>([]);
   const [visible, setVisibility] = useState(false);
   const init = useSelector(selectInit);
   const current = useSelector(selectCurrent);
@@ -107,7 +109,7 @@ function ChatWrapper() {
 
     const message: string = formatMessage(files, data);
     if (message.length > 0 && data.trim().length > 0) {
-      if (await sendAction(message)) {
+      if (await sendAction(message, undefined, selectedTools)) {
         forgetMemory("history");
         clearFile();
         return true;
@@ -188,6 +190,17 @@ function ChatWrapper() {
                 transition={{ duration: 0.3, delay: 0.1 }}
               >
                 <WebAction />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.3, delay: 0.15 }}
+              >
+                <SkillSelector
+                  selected={selectedTools}
+                  onChange={setSelectedTools}
+                />
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}

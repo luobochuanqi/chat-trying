@@ -2,6 +2,7 @@ import { mobile } from "@/utils/device.ts";
 import { filterMessage } from "@/utils/processor.ts";
 import { setMenu } from "@/store/menu.ts";
 import {
+  Image,
   Loader2,
   MessageSquare,
   MessagesSquare,
@@ -73,9 +74,15 @@ function ConversationItem({
         setOpen(true);
       }}
     >
-      <MessageSquare
-        className={`h-6 w-6 p-1 mr-1 text-secondary bg-input/25 rounded-sm`}
-      />
+      {conversation.model === "seedream-draw" ? (
+        <Image
+          className={`h-6 w-6 p-1 mr-1 text-secondary bg-input/25 rounded-sm`}
+        />
+      ) : (
+        <MessageSquare
+          className={`h-6 w-6 p-1 mr-1 text-secondary bg-input/25 rounded-sm`}
+        />
+      )}
       <div className={`title`}>{filterMessage(conversation.name)}</div>
       <DropdownMenu
         open={open}

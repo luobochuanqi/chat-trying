@@ -345,6 +345,44 @@ const chatSlice = createSlice({
 
       setOfflineModels(models);
     },
+    updateMessageUsage: (state, action) => {
+      const { id, data } = action.payload as {
+        id: number;
+        data: {
+          cacheHitTokens: number;
+          cacheMissTokens: number;
+          completionTokens: number;
+          cost: number;
+        };
+      };
+      const conversation = state.conversations[id];
+      if (!conversation) return;
+
+      const messages = conversation.messages;
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].role === AssistantRole) {
+          messages[i].usage = data;
+          break;
+        }
+      }
+    },
+    updateMessageToolStatus: (state, action) => {
+      const { id, data } = action.payload as {
+        id: number;
+        data: { status: string; toolName: string };
+      };
+      const conversation = state.conversations[id];
+      if (!conversation) return;
+
+      const messages = conversation.messages;
+      for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].role === AssistantRole) {
+          messages[i].toolStatus = data.status;
+          messages[i].toolName = data.toolName;
+          break;
+        }
+      }
+    },
 
   },
 });
@@ -375,6 +413,8 @@ export const {
   deleteConversation,
   deleteAllConversation,
   preflightHistory,
+  updateMessageUsage,
+  updateMessageToolStatus,
 } = chatSlice.actions;
 export const selectHistory = (state: RootState): ConversationInstance[] =>
   state.chat.history;
@@ -489,7 +529,7 @@ export function useMessageActions() {
   const repetition_penalty = useSelector(repetitionPenaltySelector);
 
   return {
-    send: async (message: string, using_model?: string) => {
+    send: async (message: string, using_model?: string, tool_names?: string[]) => {
       if (current === -1 && conversations[-1].messages.length === 0) {
         // preflight history if it's a new conversation
         dispatch(preflightHistory(message));
@@ -518,6 +558,7 @@ export function useMessageActions() {
         presence_penalty,
         frequency_penalty,
         repetition_penalty,
+        tool_names: tool_names || [],
       });
       if (!state) return false;
 

@@ -69,6 +69,14 @@ export type Message = {
   tool_call_id?: string;
   name?: string;
   response_type?: string;
+  usage?: {
+    cacheHitTokens: number;
+    cacheMissTokens: number;
+    completionTokens: number;
+    cost: number;
+  };
+  toolStatus?: string;
+  toolName?: string;
 };
 
 export type Model = {
