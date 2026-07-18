@@ -35,6 +35,7 @@ services:
       - ./config:/config
       - ./logs:/logs
       - ./storage:/storage
+      - ./db:/db
       - ./students.csv:/students.csv
     networks:
       - ai-platform-network
