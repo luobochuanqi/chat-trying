@@ -123,7 +123,7 @@ export class Connection {
     this.init();
   }
 
-  public send(data: Record<string, string | boolean | number>): boolean {
+  public send(data: Record<string, string | boolean | number | string[]>): boolean {
     if (!this.state || !this.connection) {
       if (this.connection === undefined) this.init();
       console.debug("[connection] connection not ready, retrying in 500ms...");

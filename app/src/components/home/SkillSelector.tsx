@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Wrench } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { ChatAction } from "@/components/home/assemblies/ChatAction.tsx";
