@@ -1,4 +1,5 @@
 import { createSlice } from "@reduxjs/toolkit";
+import axios from "axios";
 import {
   AssistantRole,
   ConversationInstance,
@@ -533,6 +534,21 @@ export function useMessageActions() {
       if (current === -1 && conversations[-1].messages.length === 0) {
         // preflight history if it's a new conversation
         dispatch(preflightHistory(message));
+      }
+
+      const effectiveModel = using_model || model;
+      if (effectiveModel === "seedream-draw") {
+        try {
+          const res = await axios.post("/api/draw", { prompt: message });
+          if (res.data?.url) {
+            dispatch(createMessage({ id: current, role: UserRole, content: message }));
+            dispatch(createMessage({ id: current, role: AssistantRole, content: `![generated image](${res.data.url})` }));
+            return true;
+          }
+          return false;
+        } catch {
+          return false;
+        }
       }
 
       if (!stack.hasConnection(current)) {

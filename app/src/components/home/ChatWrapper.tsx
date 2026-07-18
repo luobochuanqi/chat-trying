@@ -36,7 +36,6 @@ import { toast } from "sonner";
 import { VoiceAction } from "@/components/VoiceProvider.tsx";
 import SkillSelector from "@/components/home/SkillSelector.tsx";
 import { AnimatePresence, motion } from "framer-motion";
-import DrawInterface from "@/components/home/DrawInterface.tsx";
 
 type InterfaceProps = {
   scrollable: boolean;
@@ -162,12 +161,8 @@ function ChatWrapper() {
   return (
     <div className={`chat-container bg-muted/25 dark:bg-muted/10`}>
       <div className={`chat-wrapper`}>
-        {model === "seedream-draw" ? (
-          <DrawInterface />
-        ) : (
-          <>
-            <Interface setTarget={setInstance} scrollable={!visible} />
-            <div className={`chat-input border-t bg-muted/25`}>
+        <Interface setTarget={setInstance} scrollable={!visible} />
+        <div className={`chat-input border-t bg-muted/25`}>
           <motion.div
             className={`flex flex-row items-center p-1.5 pb-0.5`}
             initial={{ opacity: 0, y: 20 }}
@@ -183,25 +178,29 @@ function ChatWrapper() {
               >
                 <ModelArea />
               </motion.div>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-              >
-                <WebAction />
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.3, delay: 0.15 }}
-              >
-                <SkillSelector
-                  selected={selectedTools}
-                  onChange={setSelectedTools}
-                />
-              </motion.div>
+              {model !== "seedream-draw" && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.3, delay: 0.1 }}
+                >
+                  <WebAction />
+                </motion.div>
+              )}
+              {model !== "seedream-draw" && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.3, delay: 0.15 }}
+                >
+                  <SkillSelector
+                    selected={selectedTools}
+                    onChange={setSelectedTools}
+                  />
+                </motion.div>
+              )}
               <motion.div
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -270,8 +269,6 @@ function ChatWrapper() {
             </div>
           </div>
         </div>
-          </>
-        )}
       </div>
     </div>
   );
